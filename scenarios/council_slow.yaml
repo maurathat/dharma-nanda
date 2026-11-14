@@ -20,6 +20,7 @@ agents:
     every: 4
     need: 5
     watch: true
+    rules: {}
 - name: member-1
   role: dn_member
   config:
