@@ -61,7 +61,12 @@ LEVELS = (("calm", "No red team, no oversight"),
           ("open", "Red team, no oversight"),
           ("blue", "Blue team"),
           ("watch", "Blue team and watchtower"),
-          ("council", "Blue team, watchtower and council"))
+          ("council_slow", "Blue team, watchtower and a slow council"
+           " (reviews every 4 rounds, acts on 5 cases)"),
+          ("council", "Blue team, watchtower and council (every 2 rounds,"
+           " 3 cases)"),
+          ("council_fast", "Blue team, watchtower and a fast council"
+           " (every round, 2 cases)"))
 table(["Town", "Value delivered", "Buyers' net (value − price − judge fees)",
        "Paid for bad work", "Good work refused",
        "Honest sellers suspended (of 6)", "Red sellers still trading (of 5)",
@@ -75,11 +80,14 @@ table(["Town", "Value delivered", "Buyers' net (value − price − judge fees)"
 
 print("## Records: the same blue-team town, three ways of checking a"
       " delivery on receipt\n")
-print("All deliveries pass through one relay. `No check` takes the bytes as"
+print("All deliveries start out through one relay. `No check` takes the bytes as"
       " they arrive. `NandaTown fingerprint` and `Canonical record"
       " (dataset.v1)` both look the arriving record up by its identity and"
       " ask for it once more if it is unknown; they differ only in how"
-      " identity is computed.\n")
+      " identity is computed. A relay whose delivery does not verify takes"
+      " a strike, and at three strikes sellers switch to a second relay"
+      " that passes bytes unchanged. In the last two rows there is no"
+      " second relay.\n")
 RELAYS = (("honest", "passes bytes unchanged"),
           ("reencode", "re-encodes every record (same data, different"
            " bytes)"),
@@ -87,19 +95,25 @@ RELAYS = (("honest", "passes bytes unchanged"),
 CHECKS = (("none", "No check"), ("town", "NandaTown fingerprint"),
           ("canonical", "Canonical record (dataset.v1)"))
 rows = []
-for relay, what in RELAYS:
-    for check, label in CHECKS:
-        rs = load(f"rec_{relay}_{check}")
-        rows.append([f"Relay {what}", label] + [
-            cell([n(r[k]) for r in rs], f) for k, f in (
-                ("value", "{:,.0f}"), ("good_refused_record", "{:.1f}"),
-                ("altered_sent", "{:.1f}"), ("altered_judged", "{:.1f}"),
-                ("honest_struck_for_altered", "{:.1f}"),
-                ("honest_suspended", "{:.1f}"))]
-            + [cell([r["edges"]["unresolved"] for r in rs], "{:.1f}")])
+CASES = [(f"rec_{relay}_{check}", f"Relay {what}", label)
+         for relay, what in RELAYS for check, label in CHECKS]
+CASES += [(f"rec_only_{check}", "Relay re-encodes every record and is the"
+           " only route", label) for check, label in CHECKS[1:]]
+for name, what, label in CASES:
+    rs = load(name)
+    rows.append([what, label] + [
+        cell([n(r[k]) for r in rs], f) for k, f in (
+            ("value", "{:,.0f}"), ("good_refused_record", "{:.1f}"),
+            ("altered_sent", "{:.1f}"), ("altered_judged", "{:.1f}"),
+            ("honest_struck_for_altered", "{:.1f}"),
+            ("honest_suspended", "{:.1f}"),
+            ("bad_relays_out", "{:.1f}"),
+            ("honest_relays_out", "{:.1f}"))]
+        + [cell([r["edges"]["unresolved"] for r in rs], "{:.1f}")])
 table(["Relay", "Check on receipt", "Value delivered",
        "Good work refused because its record did not verify",
        "Altered deliveries sent", "Altered deliveries that reached the"
        " judges", "Strikes on honest sellers for an answer the relay"
        " changed", "Honest sellers suspended (of 6)",
+       "Altering relays suspended", "Honest relays suspended",
        "Parent links the audit could not resolve"], rows)

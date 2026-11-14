@@ -36,22 +36,29 @@ CHECKS = {"none": ("dharma.records.v1", False),
 
 
 def town(name, text, blue, watch, council, relay="reencode",
-         data_facts="dharma.records.v1", verify=True, red=True):
+         data_facts="dharma.records.v1", verify=True, red=True,
+         every=2, need=3, only_route=False):
     agents = [{"name": "council", "role": "dn_council", "config": {
         "members": ["member-1", "member-2", "member-3"] if council else [],
-        "every": 2, "watch": watch}}]
-    votes = [{"vote": "yes"}, {"vote": "evidence", "bar": 3},
-             {"vote": "evidence", "bar": 5}]
+        "every": every, "need": need, "watch": watch}}]
+    # One member always agrees, one wants the evidence the chair wants, and
+    # one wants two cases more: a proposal passes 2 to 1.
+    votes = [{"vote": "yes"}, {"vote": "evidence", "bar": need},
+             {"vote": "evidence", "bar": need + 2}]
     agents += [{"name": f"member-{i + 1}", "role": "dn_member", "config": v}
                for i, v in enumerate(votes)]
     agents.append({"name": "relay-1", "role": "dn_relay",
                    "config": {"mode": relay, "rate": 0.3}})
+    agents.append({"name": "relay-2", "role": "dn_relay",
+                   "config": {"mode": "honest"}})
+    route = {"relays": ["relay-1"], "direct": False} if only_route \
+        else {"relays": ["relay-1", "relay-2"]}
     for i, sign in enumerate(SIGNS):
         agents.append({"name": f"seller-{i + 1}", "role": "dn_seller",
                        "config": {"plan": "honest", "slip": 0.1, "sign": sign,
-                                  "relay": "relay-1", "ask_cents": 1000}})
+                                  "ask_cents": 1000, **route}})
     for n, c in RED:
-        c = dict(c, relay="relay-1", ask_cents=1000)
+        c = dict(c, ask_cents=1000, **route)
         if not red:
             c["plan"] = "honest"
         agents.append({"name": n, "role": "dn_seller", "config": c})
@@ -93,3 +100,14 @@ for relay in ("honest", "reencode", "alter"):
              f"Blue-team town. Relay: {relay}. Record check on receipt:"
              f" {check}.", True, False, False, relay=relay,
              data_facts=plugin, verify=verify)
+for check in ("town", "canonical"):
+    town(f"rec_only_{check}",
+         "Blue-team town. The relay re-encodes and is the only route."
+         f" Record check on receipt: {check}.", True, False, False,
+         relay="reencode", data_facts=CHECKS[check][0], only_route=True)
+town("council_fast", LEVELS["council"][3] + " The council reviews every"
+     " round and acts on two cases. Red team active.", True, True, True,
+     every=1, need=2)
+town("council_slow", LEVELS["council"][3] + " The council reviews every"
+     " four rounds and acts on five cases. Red team active.", True, True,
+     True, every=4, need=5)
