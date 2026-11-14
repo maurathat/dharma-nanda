@@ -128,7 +128,9 @@ class Ladder:
 class Seller(SimAgent):
     """config: ask_cents, plan (honest | cheat | inject | spotter | wave),
     slip (honest mistake rate), tell (spotter: text in a tester's name),
-    wave_at (wave: first round of cheating), relay (name), sign (a display
+    wave_at (wave: first round of cheating), relays (names, in order of
+    preference), direct (may send without a relay when none is in good
+    standing; default yes), sign (a display
     name written into each delivery)."""
 
     def on_start(self):
@@ -180,9 +182,21 @@ class Seller(SimAgent):
         if job_id in self.sent:
             self._send(msg["sender"], job_id, self.sent[job_id])
 
+    def _route(self) -> str | None:
+        """The first relay on this seller's list that is in good standing.
+        With none left, send direct, unless a relay is the only way."""
+        relays = self.config.get("relays", [])
+        limit = rules_of(self.api)["suspend_at"]
+        for name in relays:
+            if -self.api.reputation(name) < limit:
+                return name
+        if relays and not self.config.get("direct", True):
+            return relays[0]
+        return None
+
     def _send(self, buyer: str, job_id: str, raw: str):
         body = {"job_id": job_id, "delivery": raw}
-        relay = self.config.get("relay")
+        relay = self._route()
         if relay:
             self.api.send(relay, "dn_carry", {"to": buyer, "body": body})
         else:
@@ -219,7 +233,8 @@ class Relay(SimAgent):
 class Buyer(SimAgent):
     """config: rounds, inspect (send deliveries to a panel), verify (check
     each record on receipt), ladder (skip suspended sellers), watch (name
-    of the watchtower, or empty), escalate_splits, judge_fee (paid to each judge for a
+    of the watchtower, or empty), escalate_splits, blame (strike a relay whose delivery does not
+    verify), judge_fee (paid to each judge for a
     verdict)."""
 
     kind = "trade"
@@ -279,6 +294,15 @@ class Buyer(SimAgent):
                 self.api.observe("dn_record_refused", b["job_id"],
                                  {"via": b.get("via", ""),
                                   "again": job["resent"]})
+                via = b.get("via", "")
+                if via and self.config.get("ladder", True) \
+                        and self.config.get("blame", True):
+                    fid, _ = book.publish(self.name, {
+                        "kind": "relay_fault", "relay": via,
+                        "job": b["job_id"], "again": int(job["resent"])},
+                        [b["job_id"]])
+                    self.api._engine.layers["trust"].update(
+                        self.name, via, "bad", fid)
                 if not job["resent"]:
                     job["resent"] = True
                     self.api.send(job["seller"], "dn_resend",
@@ -550,12 +574,13 @@ class Watchtower(SimAgent):
 @role("dn_council")
 class Council(SimAgent):
     """The chair. Publishes the first rule, reads the public records every
-    `every` rounds, and proposes a change when they show a problem: three
+    `every` rounds, and proposes a change when they show a problem: `need`
     deliveries refused on flags alone though most judges accepted the
     answer (send flags to the watchtower instead), or failed test jobs
     doubling from one review to the next (plant more tests).
 
-    config: rules, members, every, watch (the town has a watchtower)."""
+    config: rules, members, every, need (refusals on flags alone before
+    proposing), watch (the town has a watchtower)."""
 
     def on_start(self):
         book = ledger(self.api)
@@ -587,7 +612,8 @@ class Council(SimAgent):
             if c["trade"] == "test" and c["fault"] == "bad":
                 fails.append(rid)
         change, evidence = None, []
-        if len(flagged) >= 3 and rules["flag_refuses"] \
+        need = self.config.get("need", 3)
+        if len(flagged) >= need and rules["flag_refuses"] \
                 and self.config.get("watch"):
             change, evidence = {"flag_refuses": 0}, flagged
         elif len(fails) >= 3 and len(fails) >= 2 * self.last_fails \
@@ -703,7 +729,9 @@ def cast_of(agents: list[dict[str, Any]]) -> dict[str, Any]:
     sellers = {a["name"]: a["config"].get("plan", "honest") for a in agents
                if a["role"] == "dn_seller"}
     return {"honest": sorted(n for n, p in sellers.items() if p == "honest"),
-            "red": sorted(n for n, p in sellers.items() if p != "honest")}
+            "red": sorted(n for n, p in sellers.items() if p != "honest"),
+            "relays": {a["name"]: a["config"].get("mode", "honest")
+                       for a in agents if a["role"] == "dn_relay"}}
 
 
 def measure(events: list[dict[str, Any]], cast: dict[str, Any],
@@ -787,6 +815,12 @@ def measure(events: list[dict[str, Any]], cast: dict[str, Any],
                                 if strikes.get(n, 0) >= suspend_at),
         red_trading=sorted(n for n in cast["red"]
                            if strikes.get(n, 0) < suspend_at),
+        honest_relays_out=sorted(
+            n for n, mode in cast.get("relays", {}).items()
+            if mode != "alter" and strikes.get(n, 0) >= suspend_at),
+        bad_relays_out=sorted(
+            n for n, mode in cast.get("relays", {}).items()
+            if mode == "alter" and strikes.get(n, 0) >= suspend_at),
         records=audit["records"], unsound=len(audit["unsound"]),
         edges={k: len(v) for k, v in audit["edges"].items()})
     return out

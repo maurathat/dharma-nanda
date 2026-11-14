@@ -45,23 +45,29 @@ rule instead (`dharma.records.town.v1`). That is the control.
 Scripted agents, 20 seeds per town, the same cast in every town. Full tables
 are in [RESULTS.md](RESULTS.md).
 
-**Records.** All deliveries pass through one relay.
+**Records.** Every delivery starts out through one relay. A relay whose
+delivery does not verify takes a strike; at three strikes sellers switch to a
+second relay.
 
-| Relay | Check on receipt | Value delivered (cents) | Honest sellers suspended (of 6) |
-| --- | --- | ---: | ---: |
-| Re-encodes every record (same data, different bytes) | NandaTown fingerprint | 0 | 0.0 |
-| Re-encodes every record | Canonical record | 115,760 | 2.7 |
-| Changes the answer in 30% of deliveries | No check | 54,720 | 6.0 |
-| Changes the answer in 30% of deliveries | Canonical record | 104,320 | 2.5 |
+| Relay | Check on receipt | Value delivered (cents) | Honest sellers suspended (of 6) | Relay suspended |
+| --- | --- | ---: | ---: | --- |
+| Re-encodes every record (same data, different bytes) | NandaTown fingerprint | 114,800 | 2.7 | The honest relay, every run |
+| Re-encodes every record | Canonical record | 115,760 | 2.7 | None |
+| Re-encodes every record and is the only route | NandaTown fingerprint | 0 | 0.0 | The honest relay, every run |
+| Re-encodes every record and is the only route | Canonical record | 115,760 | 2.7 | None |
+| Changes the answer in 30% of deliveries | No check | 54,720 | 6.0 | None |
+| Changes the answer in 30% of deliveries | Canonical record | 114,960 | 2.6 | The altering relay, every run |
 
 - A relay that only re-encodes, as any gateway written in another language
-  may, stops the whole market when identity is a fingerprint of the parsed
-  JSON: every honest delivery is refused as unknown. With canonical records
-  nothing is lost.
+  may, is convicted as a tamperer in every run when identity is a
+  fingerprint of the parsed JSON. If it is the only route, the market stops:
+  every honest delivery is refused as unknown. With canonical records nothing
+  is lost and nobody is blamed.
 - A relay that changes answers gets every honest seller suspended when
   records are not checked: the judges see the changed answer and the seller
-  takes the strike. Checked on receipt, every changed delivery was caught
-  before it reached a judge (41.5 of 41.5 per run).
+  takes the strike. Checked on receipt, no changed delivery reached a judge,
+  the relay was suspended after 3.4 changed deliveries on average, and the
+  town delivered what it delivers with an honest relay.
 - Even with no check on receipt, an audit afterwards finds the damage: the
   verdicts name a delivery nobody published (57 unresolved parent links per
   run).
@@ -71,9 +77,11 @@ are in [RESULTS.md](RESULTS.md).
 | Town | Buyers' net (cents) | Honest sellers suspended (of 6) | Red sellers still trading (of 5) |
 | --- | ---: | ---: | ---: |
 | Red team, no oversight | −4,000 | 0.0 | 5.0 |
-| Blue team | 31,690 | 2.7 | 0.0 |
-| Blue team and watchtower | 31,850 | 2.8 | 0.0 |
-| Blue team, watchtower and council | 31,760 | 1.8 | 0.0 |
+| Blue team | 31,690 | 2.7 ± 0.5 | 0.0 |
+| Blue team and watchtower | 31,850 | 2.8 ± 0.5 | 0.0 |
+| ... and a slow council (reviews every 4 rounds, acts on 5 cases) | 31,850 | 2.8 ± 0.5 | 0.0 |
+| ... and a council (every 2 rounds, 3 cases) | 31,760 | 1.8 ± 0.7 | 0.0 |
+| ... and a fast council (every round, 2 cases) | 32,300 | 0.8 ± 0.5 | 0.0 |
 
 - The blue team removes every red seller and turns a loss into a gain, but
   suspends nearly half the honest sellers: two judges who flag honest work
@@ -82,8 +90,10 @@ are in [RESULTS.md](RESULTS.md).
   nothing measurable.
 - The council notices from the public records that deliveries are being
   refused on flags alone, sends flags to the watchtower instead, and has the
-  earlier strikes looked at again. A third of the wrongly suspended sellers
-  are restored. Value delivered does not move, because the change comes late.
+  earlier strikes looked at again. How soon it acts decides what it is
+  worth: a slow council never acts within the run, and a fast one cuts
+  wrongly suspended honest sellers from 2.7 to 0.8. Buyers' net barely
+  moves, because other honest sellers were filling the gap.
 
 ## Limits
 
@@ -94,8 +104,9 @@ are in [RESULTS.md](RESULTS.md).
   answer.
 - The ladder is deliberately plain: strikes only rise, and a mistake counts
   the same as a cheat.
-- The altering relay is caught but not punished, and sellers do not choose
-  another relay.
+- A relay is struck on any delivery that does not verify, so a relay that
+  merely re-encodes is treated as a tamperer under the fingerprint check.
+  That is the point of the comparison, not a model of how relays are policed.
 - Records are not signed. Identity and lineage are checked; who published a
   record rests on the town's own message layer.
 
@@ -126,7 +137,7 @@ Then, from `dharma-nanda` with the virtual environment active:
 | `python verify.py runs/council/seed-1` | NandaTown's own bundle check, then a second run that must give the same events. |
 | `python make_scenarios.py` | Rewrite the scenario files. |
 
-`evidence/` holds the seed 1 bundle of seven towns. Unpack one and verify it:
+`evidence/` holds the seed 1 bundle of nine towns. Unpack one and verify it:
 
 ```
 tar -xzf evidence/council-seed1.tar.gz -C /tmp

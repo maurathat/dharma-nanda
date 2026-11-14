@@ -14,6 +14,7 @@ agents:
   config:
     members: []
     every: 2
+    need: 3
     watch: false
 - name: member-1
   role: dn_member
@@ -34,87 +35,93 @@ agents:
   config:
     mode: alter
     rate: 0.3
+- name: relay-2
+  role: dn_relay
+  config:
+    mode: honest
 - name: seller-1
   role: dn_seller
   config:
     plan: honest
     slip: 0.1
     sign: Zoë's Ledgers
-    relay: relay-1
     ask_cents: 1000
+    relays: &id001
+    - relay-1
+    - relay-2
 - name: seller-2
   role: dn_seller
   config:
     plan: honest
     slip: 0.1
     sign: Café Søren
-    relay: relay-1
     ask_cents: 1000
+    relays: *id001
 - name: seller-3
   role: dn_seller
   config:
     plan: honest
     slip: 0.1
     sign: Åsa & Co
-    relay: relay-1
     ask_cents: 1000
+    relays: *id001
 - name: seller-4
   role: dn_seller
   config:
     plan: honest
     slip: 0.1
     sign: Renée Books
-    relay: relay-1
     ask_cents: 1000
+    relays: *id001
 - name: seller-5
   role: dn_seller
   config:
     plan: honest
     slip: 0.1
     sign: Jürgen Tally
-    relay: relay-1
     ask_cents: 1000
+    relays: *id001
 - name: seller-6
   role: dn_seller
   config:
     plan: honest
     slip: 0.1
     sign: Niño Accounts
-    relay: relay-1
     ask_cents: 1000
+    relays: *id001
 - name: cheat-1
   role: dn_seller
   config:
     plan: cheat
-    relay: relay-1
     ask_cents: 1000
+    relays: *id001
 - name: inject-1
   role: dn_seller
   config:
     plan: inject
-    relay: relay-1
     ask_cents: 1000
+    relays: *id001
 - name: spotter-1
   role: dn_seller
   config:
     plan: spotter
     tell: tester
-    relay: relay-1
     ask_cents: 1000
+    relays: *id001
 - name: wave-1
   role: dn_seller
   config:
     plan: wave
     wave_at: 9
-    relay: relay-1
     ask_cents: 1000
+    relays: *id001
 - name: wave-2
   role: dn_seller
   config:
     plan: wave
     wave_at: 9
-    relay: relay-1
     ask_cents: 1000
+    relays: *id001
 - name: judge-1
   role: dn_judge
   config:
