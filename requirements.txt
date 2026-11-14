@@ -1,0 +1,4 @@
+# Tested set. NandaTown itself is installed from its repository (see README).
+rfc8785==0.1.4
+pyyaml>=6.0
+pytest>=8
