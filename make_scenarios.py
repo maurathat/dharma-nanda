@@ -38,7 +38,7 @@ CHECKS = {"none": ("dharma.records.v1", False),
 def town(name, text, blue, watch, council, relay="reencode",
          data_facts="dharma.records.v1", verify=True, red=True,
          every=2, need=3, only_route=False, care=0.98, capacity=4,
-         rules=None):
+         rules=None, attack=""):
     agents = [{"name": "council", "role": "dn_council", "config": {
         "members": ["member-1", "member-2", "member-3"] if council else [],
         "every": every, "need": need, "watch": watch,
@@ -70,6 +70,16 @@ def town(name, text, blue, watch, council, relay="reencode",
                else "honest", "targets": ["seller-1", "seller-2"]},
               {"care": 0.95, "flags": 0.9, "plan": "griefer" if red
                else "honest", "targets": ["seller-1", "seller-2"]}]
+    honest = [f"seller-{i + 1}" for i in range(len(SIGNS))]
+    if attack == "collude":      # two judges wave the red sellers through
+        for j in judges[3:]:
+            j.update(plan="colluder", friends=[n for n, _ in RED])
+    elif attack == "flood":      # three judges flag every honest seller
+        for j in judges[2:]:
+            j.update(plan="griefer", targets=honest, from_round=6)
+    elif attack == "grind":      # two judges flag whatever one buyer buys
+        for j in judges[3:]:
+            j.update(plan="griefer", targets=[], clients=["grinder-1"])
     agents += [{"name": f"judge-{i + 1}", "role": "dn_judge", "config": c}
                for i, c in enumerate(judges)]
     agents.append({"name": "watchtower", "role": "dn_watchtower",
@@ -79,6 +89,10 @@ def town(name, text, blue, watch, council, relay="reencode",
              "balance_cents": 1000 * ROUNDS * 3}
     agents += [{"name": f"buyer-{i + 1}", "role": "dn_buyer",
                 "config": dict(buyer)} for i in range(6)]
+    if attack == "grind":
+        agents.append({"name": "grinder-1", "role": "dn_buyer",
+                       "config": dict(buyer, grind=20,
+                                      friends=["judge-4", "judge-5"])})
     agents.append({"name": "tester-1", "role": "dn_tester", "config": dict(
         buyer, rounds=ROUNDS if blue else 0, watch="")})
     spec = {"name": name, "description": text, "seed": 1,
@@ -129,3 +143,22 @@ for care in (60, 80, 98):
              f" {care}% of the time and takes {capacity} cases a round.",
              True, True, False, rules={"flag_refuses": 0}, care=care / 100,
              capacity=capacity)
+
+# More red-team pressure, each against three levels of oversight.
+ATTACKS = {
+    "collude": "Two judges accept whatever the red sellers deliver.",
+    "grind": "A buyer rewrites each job until two judges who work for it"
+             " are on the panel; they flag the delivery, so it is refunded"
+             " and keeps the work.",
+    "flood": "From round 6, three of the five judges flag every honest"
+             " seller's delivery.",
+}
+for attack, what in ATTACKS.items():
+    town(f"atk_{attack}_blue", f"Blue team. {what}", True, False, False,
+         attack=attack)
+    town(f"atk_{attack}_watch", f"Blue team and a watchtower that is sent"
+         f" flagged deliveries. {what}", True, True, False,
+         rules={"flag_refuses": 0}, attack=attack)
+    town(f"atk_{attack}_council", f"Blue team, watchtower and a fast"
+         f" council. {what}", True, True, True, every=1, need=2,
+         attack=attack)

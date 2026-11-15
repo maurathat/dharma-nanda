@@ -1,0 +1,245 @@
+name: atk_flood_council
+description: Blue team, watchtower and a fast council. From round 6, three of the five judges flag every
+  honest seller's delivery.
+seed: 1
+layers:
+  trust: dharma.ladder.v1
+  data_facts: dharma.records.v1
+plugin_files:
+- ../dharma_nanda.py
+validator: dharma_nanda
+max_time: 26.0
+agents:
+- name: council
+  role: dn_council
+  config:
+    members:
+    - member-1
+    - member-2
+    - member-3
+    every: 1
+    need: 2
+    watch: true
+    rules: {}
+- name: member-1
+  role: dn_member
+  config:
+    vote: 'yes'
+- name: member-2
+  role: dn_member
+  config:
+    vote: evidence
+    bar: 2
+- name: member-3
+  role: dn_member
+  config:
+    vote: evidence
+    bar: 4
+- name: relay-1
+  role: dn_relay
+  config:
+    mode: reencode
+    rate: 0.3
+- name: relay-2
+  role: dn_relay
+  config:
+    mode: honest
+- name: seller-1
+  role: dn_seller
+  config:
+    plan: honest
+    slip: 0.1
+    sign: Zoë's Ledgers
+    ask_cents: 1000
+    relays: &id001
+    - relay-1
+    - relay-2
+- name: seller-2
+  role: dn_seller
+  config:
+    plan: honest
+    slip: 0.1
+    sign: Café Søren
+    ask_cents: 1000
+    relays: *id001
+- name: seller-3
+  role: dn_seller
+  config:
+    plan: honest
+    slip: 0.1
+    sign: Åsa & Co
+    ask_cents: 1000
+    relays: *id001
+- name: seller-4
+  role: dn_seller
+  config:
+    plan: honest
+    slip: 0.1
+    sign: Renée Books
+    ask_cents: 1000
+    relays: *id001
+- name: seller-5
+  role: dn_seller
+  config:
+    plan: honest
+    slip: 0.1
+    sign: Jürgen Tally
+    ask_cents: 1000
+    relays: *id001
+- name: seller-6
+  role: dn_seller
+  config:
+    plan: honest
+    slip: 0.1
+    sign: Niño Accounts
+    ask_cents: 1000
+    relays: *id001
+- name: cheat-1
+  role: dn_seller
+  config:
+    plan: cheat
+    ask_cents: 1000
+    relays: *id001
+- name: inject-1
+  role: dn_seller
+  config:
+    plan: inject
+    ask_cents: 1000
+    relays: *id001
+- name: spotter-1
+  role: dn_seller
+  config:
+    plan: spotter
+    tell: tester
+    ask_cents: 1000
+    relays: *id001
+- name: wave-1
+  role: dn_seller
+  config:
+    plan: wave
+    wave_at: 9
+    ask_cents: 1000
+    relays: *id001
+- name: wave-2
+  role: dn_seller
+  config:
+    plan: wave
+    wave_at: 9
+    ask_cents: 1000
+    relays: *id001
+- name: judge-1
+  role: dn_judge
+  config:
+    care: 0.95
+    flags: 0.9
+    follows: 0.6
+- name: judge-2
+  role: dn_judge
+  config:
+    care: 0.95
+    flags: 0.9
+- name: judge-3
+  role: dn_judge
+  config:
+    care: 0.95
+    flags: 0.9
+    plan: griefer
+    targets: &id002
+    - seller-1
+    - seller-2
+    - seller-3
+    - seller-4
+    - seller-5
+    - seller-6
+    from_round: 6
+- name: judge-4
+  role: dn_judge
+  config:
+    care: 0.95
+    flags: 0.9
+    plan: griefer
+    targets: *id002
+    from_round: 6
+- name: judge-5
+  role: dn_judge
+  config:
+    care: 0.95
+    flags: 0.9
+    plan: griefer
+    targets: *id002
+    from_round: 6
+- name: watchtower
+  role: dn_watchtower
+  config:
+    capacity: 4
+    care: 0.98
+- name: buyer-1
+  role: dn_buyer
+  config:
+    rounds: 16
+    inspect: true
+    verify: true
+    ladder: true
+    judge_fee: 40
+    watch: watchtower
+    balance_cents: 48000
+- name: buyer-2
+  role: dn_buyer
+  config:
+    rounds: 16
+    inspect: true
+    verify: true
+    ladder: true
+    judge_fee: 40
+    watch: watchtower
+    balance_cents: 48000
+- name: buyer-3
+  role: dn_buyer
+  config:
+    rounds: 16
+    inspect: true
+    verify: true
+    ladder: true
+    judge_fee: 40
+    watch: watchtower
+    balance_cents: 48000
+- name: buyer-4
+  role: dn_buyer
+  config:
+    rounds: 16
+    inspect: true
+    verify: true
+    ladder: true
+    judge_fee: 40
+    watch: watchtower
+    balance_cents: 48000
+- name: buyer-5
+  role: dn_buyer
+  config:
+    rounds: 16
+    inspect: true
+    verify: true
+    ladder: true
+    judge_fee: 40
+    watch: watchtower
+    balance_cents: 48000
+- name: buyer-6
+  role: dn_buyer
+  config:
+    rounds: 16
+    inspect: true
+    verify: true
+    ladder: true
+    judge_fee: 40
+    watch: watchtower
+    balance_cents: 48000
+- name: tester-1
+  role: dn_tester
+  config:
+    rounds: 16
+    inspect: true
+    verify: true
+    ladder: true
+    judge_fee: 40
+    watch: ''
+    balance_cents: 48000

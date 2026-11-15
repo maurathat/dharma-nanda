@@ -116,6 +116,29 @@ council; the watchtower is a stand-in policy, not a person.
 - None of this says how accurate or how fast a real person is. Sit in the
   seat (`--watch live`): each answer is saved with the seconds it took.
 
+**More red-team pressure.** Each attack is added to the usual red team.
+"Watchtower" is sent split panels and flagged deliveries from the start.
+
+| Attack | Oversight | Buyers' net (cents) | Honest sellers suspended (of 6) | Notes |
+| --- | --- | ---: | ---: | --- |
+| Two judges accept whatever red sellers deliver | Blue team | 23,350 | 0.5 | 7,400 paid for bad work |
+| | Watchtower | 32,620 | 0.8 | 650 paid for bad work |
+| A buyer rewrites each job until its two judges are on the panel, to get good work refunded | Blue team | 25,468 | 6.0 | 14,560 of work taken without paying |
+| | Watchtower | 34,290 | 1.4 | 240 taken |
+| | Fast council | 34,140 | 1.9 | 4,240 taken before the rule changed |
+| Three of five judges flag every honest seller from round 6 | Blue team | 12,128 | 6.0 | Value falls by more than half |
+| | Watchtower | 30,810 | 1.1 | 43 cases a run; 3.8 held for lack of time |
+| | Fast council | 28,910 | 1.9 | 39 cases; 3.9 held |
+
+- Each attack breaks the blue team on its own: two of them end with every
+  honest seller suspended.
+- A watchtower that is sent the flagged and split cases holds against all
+  three, at a cost in the person's time: 43 cases a run in the flood,
+  against 11 normally, and some go undecided.
+- The panel for a job is fixed by the job's identity, which the buyer
+  chooses. That is what the grinding buyer exploits; the town does not fix
+  it, it only catches the result.
+
 ## Limits
 
 - The agents are scripted: fixed chances of a mistake, of catching one, of

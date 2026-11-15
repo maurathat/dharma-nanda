@@ -70,6 +70,14 @@ def rules_of(api) -> dict[str, int]:
     return {**DEFAULT_RULES, **ledger(api).rules()}
 
 
+def panel_for(api, job_id: str) -> list[str]:
+    """The judges for a job: fixed by the job's identity, so anyone can
+    check the draw, and anyone who can choose the identity can choose it."""
+    judges = sorted(c["name"] for c in api.lookup("judge"))
+    judges.sort(key=lambda n: sha(f"{job_id}|{n}"))
+    return judges[:rules_of(api)["panel"]]
+
+
 # -- the work ---------------------------------------------------------------
 
 def make_task(api, key: str) -> str:
@@ -235,7 +243,8 @@ class Buyer(SimAgent):
     """config: rounds, inspect (send deliveries to a panel), verify (check
     each record on receipt), ladder (skip suspended sellers), watch (name
     of the watchtower, or empty), escalate_splits, blame (strike a relay whose delivery does not
-    verify), judge_fee (paid to each judge for a
+    verify), grind and friends (red team: the number of rewrites of a job
+    it will try so that most of its panel are these judges), judge_fee (paid to each judge for a
     verdict)."""
 
     kind = "trade"
@@ -271,10 +280,19 @@ class Buyer(SimAgent):
         price = card["facts"]["ask_cents"]
         if self.api.balance() < price:
             return
-        job_id, raw = book.publish(self.name, {
-            "kind": "job", "task": make_task(self.api, key), "price": price,
-            "round": self.round, "key": key},
-            [book.rule_id] if book.rule_id else [])
+        parents = [book.rule_id] if book.rule_id else []
+        friends = set(self.config.get("friends", []))
+        for i in range(max(1, self.config.get("grind", 0))):
+            # A grinding buyer rewrites the job until its friends are drawn.
+            k = key if i == 0 else f"{key}-g{i}"
+            content = {"kind": "job", "task": make_task(self.api, k),
+                       "price": price, "round": self.round, "key": k}
+            if not friends or 2 * len(friends & set(panel_for(
+                    self.api, book.identify(records.build(
+                        self.name, content, parents))))) \
+                    > rules["panel"]:
+                break
+        job_id, raw = book.publish(self.name, content, parents)
         self.api.escrow_hold(price, ref=job_id)
         self.jobs[job_id] = {"seller": card["name"], "price": price,
                              "raw": raw, "resent": False, "verdicts": {},
@@ -321,9 +339,7 @@ class Buyer(SimAgent):
         if not self.config.get("inspect", True):
             return self.settle(job_id, True, "good", "unchecked",
                                [job["delivery"]])
-        judges = sorted(c["name"] for c in self.api.lookup("judge"))
-        judges.sort(key=lambda n: sha(f"{job_id}|{n}"))
-        job["panel"] = judges[:rules_of(self.api)["panel"]]
+        job["panel"] = panel_for(self.api, job_id)
         for name in job["panel"]:
             self.api.send(name, "dn_review", {
                 "job_id": job_id, "job": job["raw"],
@@ -411,7 +427,7 @@ class Buyer(SimAgent):
         self.api.observe("dn_outcome", job_id, {
             "seller": job["seller"], "trade": self.kind, "reason": reason,
             "paid_cents": job["price"] if paid else 0, "fault": fault,
-            "round": self.round, "settlement": rid,
+            "round": self.round, "settlement": rid, "buyer": self.name,
             "fees": job.get("fees", 0)})
 
 
@@ -438,8 +454,9 @@ class Tester(Buyer):
 class Judge(SimAgent):
     """config: care (chance of catching a wrong answer), follows (chance of
     obeying an injection), flags (chance of flagging one), plan (honest |
-    griefer | colluder), targets (griefer: sellers to flag), friends
-    (colluder: sellers to accept)."""
+    griefer | colluder), targets (griefer: sellers to flag), clients
+    (griefer: buyers whose every job it flags), from_round (griefer: first
+    round it acts), friends (colluder: sellers to accept)."""
 
     def on_start(self):
         self.api.register(["judge"], {})
@@ -463,7 +480,11 @@ class Judge(SimAgent):
         if injected and luck(self.api, "obey", *key) < c.get("follows", 0.0):
             accept, flag = True, False
         plan = c.get("plan", "honest")
-        if plan == "griefer" and seller in c.get("targets", []):
+        job = records.members(b["job"])
+        if plan == "griefer" \
+                and job["content"]["round"] >= c.get("from_round", 0) \
+                and (seller in c.get("targets", [])
+                     or job["owner"] in c.get("clients", [])):
             flag = True
         if plan == "colluder" and seller in c.get("friends", []):
             accept, flag = True, False
@@ -735,6 +756,8 @@ def cast_of(agents: list[dict[str, Any]]) -> dict[str, Any]:
                if a["role"] == "dn_seller"}
     return {"honest": sorted(n for n, p in sellers.items() if p == "honest"),
             "red": sorted(n for n, p in sellers.items() if p != "honest"),
+            "red_buyers": sorted(a["name"] for a in agents
+                                 if a["config"].get("grind")),
             "relays": {a["name"]: a["config"].get("mode", "honest")
                        for a in agents if a["role"] == "dn_relay"}}
 
@@ -749,7 +772,8 @@ def measure(events: list[dict[str, Any]], cast: dict[str, Any],
            "altered_sent": 0, "altered_judged": 0, "reencoded_sent": 0,
            "reencoded_lost": 0, "honest_struck_for_altered": 0,
            "watch_cases": 0, "watch_held": 0, "watch_right": 0,
-           "watch_by_person": 0, "rule_changes": [], "fees": 0,
+           "watch_by_person": 0, "rule_changes": [], "fees": 0, "stolen": 0,
+           "red_buyer_paid": 0,
            "pardons": 0}
     suspend_at = DEFAULT_RULES["suspend_at"]
     last_did: dict[str, str] = {}
@@ -791,7 +815,12 @@ def measure(events: list[dict[str, Any]], cast: dict[str, Any],
             good = w["quality"] == "good"
             judged_altered = last_did.get(s) == "altered" \
                 and d["reason"] != "record"
-            if d["trade"] == "test":
+            if d.get("buyer") in cast.get("red_buyers", ()):
+                # A red buyer's trades are not the town's gain; good work
+                # it got refunded is work taken without paying.
+                out["stolen"] += VALUE * (good and not d["paid_cents"])
+                out["red_buyer_paid"] += d["paid_cents"]
+            elif d["trade"] == "test":
                 out["tests"] += 1
                 out["tests_failed"] += d["fault"] == "bad"
             else:
