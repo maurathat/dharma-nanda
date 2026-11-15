@@ -95,6 +95,27 @@ second relay.
   wrongly suspended honest sellers from 2.7 to 0.8. Buyers' net barely
   moves, because other honest sellers were filling the gap.
 
+**What the watchtower is sent, and how good and how busy it is.** No
+council; the watchtower is a stand-in policy, not a person.
+
+| Sent to the watchtower | Right | Cases a round | Buyers' net (cents) | Good work refused | Honest sellers suspended (of 6) |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Nothing (no watchtower) | | | 31,690 | 3.0 | 2.7 |
+| Split panels only | 98% | 4 | 31,850 | 3.0 | 2.8 |
+| Split panels and flagged deliveries | 98% | 4 | 33,200 | 0.1 | 0.8 |
+| Split panels and flagged deliveries | 98% | 1 | 31,690 | 1.4 | 0.7 |
+| Split panels and flagged deliveries | 80% | 4 | 31,680 | 1.2 | 1.3 |
+| Split panels and flagged deliveries | 60% | 4 | 30,220 | 2.1 | 1.1 |
+
+- What is sent matters most. Sent only split panels, the watchtower changes
+  nothing. Sent flagged deliveries too, it nearly ends the refusal of good
+  work and cuts wrongly suspended honest sellers from 2.7 to 0.8.
+- The gain in buyers' net needs a watchtower that is both accurate and has
+  time: at 80% right, or at one case a round, net is back where it was
+  without one. Fewer honest sellers are suspended even then.
+- None of this says how accurate or how fast a real person is. Sit in the
+  seat (`--watch live`): each answer is saved with the seconds it took.
+
 ## Limits
 
 - The agents are scripted: fixed chances of a mistake, of catching one, of

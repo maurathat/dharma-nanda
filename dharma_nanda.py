@@ -33,6 +33,7 @@ import json
 import os
 import re
 import sys
+import time
 from typing import Any
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -551,15 +552,19 @@ class Watchtower(SimAgent):
                               + " by " + book.read(r)["owner"])
                              for d, r in records.lineage(book.store, case_id)
                              if r in book.store]))
-            ans = ""
+            ans, began = "", time.monotonic()
             while ans not in ("a", "r", "i"):
                 ans = input("  [a]ccept and pay, [r]efuse, or refuse as an"
                             " [i]njection attempt? ").strip().lower()[:1]
             d = {"decision": "accept" if ans == "a" else "refuse",
                  "injection": int(ans == "i"), "by": "person"}
+            # How long the person took is kept beside the answer, outside
+            # the trace, so a replay does not depend on it.
             if self.path:
                 with open(self.path, "a", encoding="utf-8") as fh:
-                    fh.write(json.dumps(dict(d, case=case_id)) + "\n")
+                    fh.write(json.dumps(dict(
+                        d, case=case_id,
+                        seconds=round(time.monotonic() - began, 1))) + "\n")
             return d
         right = work["content"]["answer"] == solve(job["content"]["task"])
         injected = INJECTION in work["content"]["note"]

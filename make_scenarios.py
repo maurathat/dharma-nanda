@@ -37,10 +37,12 @@ CHECKS = {"none": ("dharma.records.v1", False),
 
 def town(name, text, blue, watch, council, relay="reencode",
          data_facts="dharma.records.v1", verify=True, red=True,
-         every=2, need=3, only_route=False):
+         every=2, need=3, only_route=False, care=0.98, capacity=4,
+         rules=None):
     agents = [{"name": "council", "role": "dn_council", "config": {
         "members": ["member-1", "member-2", "member-3"] if council else [],
-        "every": every, "need": need, "watch": watch}}]
+        "every": every, "need": need, "watch": watch,
+        "rules": rules or {}}}]
     # One member always agrees, one wants the evidence the chair wants, and
     # one wants two cases more: a proposal passes 2 to 1.
     votes = [{"vote": "yes"}, {"vote": "evidence", "bar": need},
@@ -71,7 +73,7 @@ def town(name, text, blue, watch, council, relay="reencode",
     agents += [{"name": f"judge-{i + 1}", "role": "dn_judge", "config": c}
                for i, c in enumerate(judges)]
     agents.append({"name": "watchtower", "role": "dn_watchtower",
-                   "config": {"capacity": 4, "care": 0.98}})
+                   "config": {"capacity": capacity, "care": care}})
     buyer = {"rounds": ROUNDS, "inspect": blue, "verify": verify and blue,
              "ladder": blue, "judge_fee": 40, "watch": "watchtower" if watch else "",
              "balance_cents": 1000 * ROUNDS * 3}
@@ -111,3 +113,19 @@ town("council_fast", LEVELS["council"][3] + " The council reviews every"
 town("council_slow", LEVELS["council"][3] + " The council reviews every"
      " four rounds and acts on five cases. Red team active.", True, True,
      True, every=4, need=5)
+
+# What is sent to the watchtower: split panels only (`watch`), or flagged
+# deliveries too, from the first round and with no council.
+town("watch_flags", "Blue team plus a watchtower that decides split panels"
+     " and flagged deliveries from the start. Red team active.", True, True,
+     False, rules={"flag_refuses": 0})
+# How good and how busy the person is. The stand-in policy decides rightly
+# with chance `care` and takes `capacity` cases a round; the rest are held
+# (refunded, no strike).
+for care in (60, 80, 98):
+    for capacity in (1, 2, 4):
+        town(f"wt_care{care}_cap{capacity}",
+             f"As watch_flags, with a stand-in watchtower that is right"
+             f" {care}% of the time and takes {capacity} cases a round.",
+             True, True, False, rules={"flag_refuses": 0}, care=care / 100,
+             capacity=capacity)

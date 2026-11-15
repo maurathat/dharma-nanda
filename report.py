@@ -117,3 +117,25 @@ table(["Relay", "Check on receipt", "Value delivered",
        " changed", "Honest sellers suspended (of 6)",
        "Altering relays suspended", "Honest relays suspended",
        "Parent links the audit could not resolve"], rows)
+
+print("## What is sent to the watchtower, and how good and how busy it"
+      " is\n")
+print("No council in these towns. The watchtower is a stand-in policy, not"
+      " a person: it decides rightly with the chance shown and takes the"
+      " number of cases a round shown; a case over that number is held"
+      " (refunded, no strike).\n")
+WT = [("blue", "No watchtower", "", ""),
+      ("watch", "Split panels only", "98%", "4"),
+      ("watch_flags", "Split panels and flagged deliveries", "98%", "4")]
+WT += [(f"wt_care{c}_cap{k}", "Split panels and flagged deliveries",
+        f"{c}%", str(k)) for c in (98, 80, 60) for k in (4, 2, 1)]
+table(["Sent to the watchtower", "Right", "Cases a round",
+       "Buyers' net", "Good work refused",
+       "Honest sellers suspended (of 6)", "Red sellers still trading (of 5)",
+       "Cases", "Cases held for lack of time", "Cases decided rightly"],
+      [[what, care, cap] + [cell([n(r[k]) for r in load(name)], f)
+                            for k, f in (
+          ("net", "{:,.0f}"), ("good_refused", "{:.1f}"),
+          ("honest_suspended", "{:.1f}"), ("red_trading", "{:.1f}"),
+          ("watch_cases", "{:.1f}"), ("watch_held", "{:.1f}"),
+          ("watch_right", "{:.1f}"))] for name, what, care, cap in WT])

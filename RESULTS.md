@@ -32,3 +32,22 @@ All deliveries start out through one relay. `No check` takes the bytes as they a
 | Relay re-encodes every record and is the only route | NandaTown fingerprint | 0 ± 0 | 68.7 ± 1.7 | 0.0 ± 0.0 | 0.0 ± 0.0 | 0.0 ± 0.0 | 0.0 ± 0.0 | 0.0 ± 0.0 | 1.0 ± 0.0 | 0.0 ± 0.0 |
 | Relay re-encodes every record and is the only route | Canonical record (dataset.v1) | 115,760 ± 2,160 | 0.0 ± 0.0 | 0.0 ± 0.0 | 0.0 ± 0.0 | 0.0 ± 0.0 | 2.7 ± 0.5 | 0.0 ± 0.0 | 0.0 ± 0.0 | 0.0 ± 0.0 |
 
+## What is sent to the watchtower, and how good and how busy it is
+
+No council in these towns. The watchtower is a stand-in policy, not a person: it decides rightly with the chance shown and takes the number of cases a round shown; a case over that number is held (refunded, no strike).
+
+| Sent to the watchtower | Right | Cases a round | Buyers' net | Good work refused | Honest sellers suspended (of 6) | Red sellers still trading (of 5) | Cases | Cases held for lack of time | Cases decided rightly |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| No watchtower |  |  | 31,690 ± 852 | 3.0 ± 0.4 | 2.7 ± 0.5 | 0.0 ± 0.0 | 0.0 ± 0.0 | 0.0 ± 0.0 | 0.0 ± 0.0 |
+| Split panels only | 98% | 4 | 31,850 ± 729 | 3.0 ± 0.4 | 2.8 ± 0.5 | 0.0 ± 0.0 | 2.7 ± 0.6 | 0.0 ± 0.0 | 2.6 ± 0.6 |
+| Split panels and flagged deliveries | 98% | 4 | 33,200 ± 720 | 0.1 ± 0.1 | 0.8 ± 0.4 | 0.0 ± 0.0 | 11.4 ± 1.3 | 0.0 ± 0.0 | 11.2 ± 1.2 |
+| Split panels and flagged deliveries | 98% | 4 | 33,200 ± 720 | 0.1 ± 0.1 | 0.8 ± 0.4 | 0.0 ± 0.0 | 11.4 ± 1.3 | 0.0 ± 0.0 | 11.2 ± 1.2 |
+| Split panels and flagged deliveries | 98% | 2 | 32,900 ± 785 | 0.2 ± 0.2 | 0.8 ± 0.4 | 0.0 ± 0.0 | 11.4 ± 1.3 | 0.7 ± 0.5 | 10.6 ± 1.0 |
+| Split panels and flagged deliveries | 98% | 1 | 31,690 ± 901 | 1.4 ± 0.7 | 0.7 ± 0.4 | 0.0 ± 0.0 | 12.2 ± 1.5 | 3.5 ± 1.1 | 8.7 ± 0.8 |
+| Split panels and flagged deliveries | 80% | 4 | 31,680 ± 955 | 1.2 ± 0.6 | 1.3 ± 0.6 | 0.0 ± 0.0 | 11.7 ± 1.4 | 0.0 ± 0.0 | 9.8 ± 1.3 |
+| Split panels and flagged deliveries | 80% | 2 | 31,500 ± 1,058 | 1.4 ± 0.6 | 1.2 ± 0.5 | 0.0 ± 0.0 | 11.8 ± 1.4 | 0.8 ± 0.4 | 9.3 ± 1.0 |
+| Split panels and flagged deliveries | 80% | 1 | 30,040 ± 1,222 | 2.5 ± 0.8 | 1.1 ± 0.5 | 0.0 ± 0.0 | 12.4 ± 1.6 | 3.7 ± 1.0 | 7.2 ± 0.9 |
+| Split panels and flagged deliveries | 60% | 4 | 30,220 ± 1,185 | 2.1 ± 0.7 | 1.1 ± 0.6 | 0.0 ± 0.0 | 10.7 ± 1.3 | 0.0 ± 0.0 | 7.0 ± 1.3 |
+| Split panels and flagged deliveries | 60% | 2 | 29,990 ± 1,246 | 2.5 ± 1.0 | 1.2 ± 0.6 | 0.0 ± 0.0 | 10.7 ± 1.5 | 0.6 ± 0.4 | 6.5 ± 1.2 |
+| Split panels and flagged deliveries | 60% | 1 | 29,890 ± 1,249 | 2.7 ± 0.9 | 0.9 ± 0.5 | 0.0 ± 0.0 | 11.0 ± 1.6 | 3.0 ± 0.9 | 5.5 ± 1.1 |
+
