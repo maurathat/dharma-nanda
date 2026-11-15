@@ -51,3 +51,22 @@ No council in these towns. The watchtower is a stand-in policy, not a person: it
 | Split panels and flagged deliveries | 60% | 2 | 29,990 ± 1,246 | 2.5 ± 1.0 | 1.2 ± 0.6 | 0.0 ± 0.0 | 10.7 ± 1.5 | 0.6 ± 0.4 | 6.5 ± 1.2 |
 | Split panels and flagged deliveries | 60% | 1 | 29,890 ± 1,249 | 2.7 ± 0.9 | 0.9 ± 0.5 | 0.0 ± 0.0 | 11.0 ± 1.6 | 3.0 ± 0.9 | 5.5 ± 1.1 |
 
+## More red-team pressure
+
+Each attack is added to the usual red team. `Watchtower` is sent split panels and flagged deliveries from the start; `Fast council` starts with flags refusing on their own and has to learn. A grinding buyer's own trades are left out of value and net; what it took is in its own column. In the three attacks the two judges who usually flag two honest sellers are doing the attack instead, so compare levels within an attack, not attacks with each other.
+
+| Attack | Oversight | Value delivered | Buyers' net | Paid for bad work | Good work taken without paying | Good work refused | Honest sellers suspended (of 6) | Red sellers still trading (of 5) | Watchtower cases | Cases held for lack of time |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| The usual red team | Blue team | 115,760 ± 2,160 | 31,690 ± 852 | 200 ± 192 | 0 ± 0 | 3.0 ± 0.4 | 2.7 ± 0.5 | 0.0 ± 0.0 | 0.0 ± 0.0 | 0.0 ± 0.0 |
+| The usual red team | Watchtower | 119,520 ± 1,817 | 33,200 ± 720 | 100 ± 144 | 0 ± 0 | 0.1 ± 0.1 | 0.8 ± 0.4 | 0.0 ± 0.0 | 11.4 ± 1.3 | 0.0 ± 0.0 |
+| The usual red team | Fast council | 117,120 ± 2,231 | 32,300 ± 868 | 100 ± 144 | 0 ± 0 | 2.0 ± 0.2 | 0.8 ± 0.5 | 0.0 ± 0.0 | 9.1 ± 1.3 | 0.0 ± 0.0 |
+| Two judges accept whatever red sellers deliver | Blue team | 112,720 ± 3,083 | 23,350 ± 2,633 | 7,400 ± 1,571 | 0 ± 0 | 0.0 ± 0.0 | 0.5 ± 0.3 | 0.3 ± 0.2 | 0.0 ± 0.0 | 0.0 ± 0.0 |
+| Two judges accept whatever red sellers deliver | Watchtower | 119,440 ± 1,577 | 32,620 ± 717 | 650 ± 462 | 0 ± 0 | 0.0 ± 0.0 | 0.8 ± 0.4 | 0.0 ± 0.0 | 13.8 ± 0.7 | 0.1 ± 0.1 |
+| Two judges accept whatever red sellers deliver | Fast council | 120,560 ± 1,990 | 32,940 ± 1,020 | 750 ± 452 | 0 ± 0 | 0.0 ± 0.0 | 0.7 ± 0.3 | 0.0 ± 0.0 | 13.1 ± 1.0 | 0.1 ± 0.1 |
+| A buyer picks its own panel to get work refunded | Blue team | 90,800 ± 6,550 | 25,468 ± 2,086 | 50 ± 104 | 14,560 ± 1,082 | 9.1 ± 0.7 | 6.0 ± 0.0 | 0.0 ± 0.0 | 0.0 ± 0.0 | 0.0 ± 0.0 |
+| A buyer picks its own panel to get work refunded | Watchtower | 122,160 ± 2,227 | 34,290 ± 835 | 0 ± 0 | 240 ± 274 | 0.1 ± 0.2 | 1.4 ± 0.7 | 0.0 ± 0.0 | 20.1 ± 0.7 | 0.0 ± 0.0 |
+| A buyer picks its own panel to get work refunded | Fast council | 121,760 ± 1,878 | 34,140 ± 704 | 0 ± 0 | 4,240 ± 439 | 2.6 ± 0.3 | 1.9 ± 0.6 | 0.0 ± 0.0 | 17.7 ± 0.8 | 0.0 ± 0.0 |
+| Three of five judges flag every honest seller from round 6 | Blue team | 52,960 ± 2,461 | 12,128 ± 715 | 100 ± 144 | 0 ± 0 | 11.4 ± 1.2 | 6.0 ± 0.0 | 0.0 ± 0.0 | 0.0 ± 0.0 | 0.0 ± 0.0 |
+| Three of five judges flag every honest seller from round 6 | Watchtower | 113,280 ± 1,995 | 30,810 ± 789 | 150 ± 171 | 0 ± 0 | 4.1 ± 0.9 | 1.1 ± 0.4 | 0.1 ± 0.1 | 43.0 ± 1.1 | 3.8 ± 0.8 |
+| Three of five judges flag every honest seller from round 6 | Fast council | 108,080 ± 2,584 | 28,910 ± 1,015 | 100 ± 144 | 0 ± 0 | 7.5 ± 1.0 | 1.9 ± 0.7 | 0.0 ± 0.0 | 38.8 ± 1.8 | 3.9 ± 0.9 |
+

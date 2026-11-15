@@ -139,3 +139,35 @@ table(["Sent to the watchtower", "Right", "Cases a round",
           ("honest_suspended", "{:.1f}"), ("red_trading", "{:.1f}"),
           ("watch_cases", "{:.1f}"), ("watch_held", "{:.1f}"),
           ("watch_right", "{:.1f}"))] for name, what, care, cap in WT])
+
+print("## More red-team pressure\n")
+print("Each attack is added to the usual red team. `Watchtower` is sent"
+      " split panels and flagged deliveries from the start; `Fast council`"
+      " starts with flags refusing on their own and has to learn. A"
+      " grinding buyer's own trades are left out of value and net; what it"
+      " took is in its own column. In the three attacks the two judges who"
+      " usually flag two honest sellers are doing the attack instead, so"
+      " compare levels within an attack, not attacks with each other.\n")
+ATK = (("", "The usual red team"),
+       ("collude", "Two judges accept whatever red sellers deliver"),
+       ("grind", "A buyer picks its own panel to get work refunded"),
+       ("flood", "Three of five judges flag every honest seller from"
+        " round 6"))
+LV = (("blue", "Blue team", "blue"), ("watch", "Watchtower", "watch_flags"),
+      ("council", "Fast council", "council_fast"))
+rows = []
+for attack, what in ATK:
+    for lv, label, base in LV:
+        rs = load(f"atk_{attack}_{lv}" if attack else base)
+        rows.append([what, label] + [cell([n(r.get(k, 0)) for r in rs], f)
+                                     for k, f in (
+            ("value", "{:,.0f}"), ("net", "{:,.0f}"),
+            ("paid_bad", "{:,.0f}"), ("stolen", "{:,.0f}"),
+            ("good_refused", "{:.1f}"), ("honest_suspended", "{:.1f}"),
+            ("red_trading", "{:.1f}"), ("watch_cases", "{:.1f}"),
+            ("watch_held", "{:.1f}"))])
+table(["Attack", "Oversight", "Value delivered", "Buyers' net",
+       "Paid for bad work", "Good work taken without paying",
+       "Good work refused", "Honest sellers suspended (of 6)",
+       "Red sellers still trading (of 5)", "Watchtower cases",
+       "Cases held for lack of time"], rows)
