@@ -26,7 +26,7 @@ RULE = "-" * 68
 def run(name, *more):
     done = subprocess.run([sys.executable, os.path.join(HERE, "run.py"),
                            "--only", name, "--seeds", SEED, "--keep", SEED,
-                           "--out", os.path.join(OUT, name.split(",")[0]),
+                           "--out", os.path.join(OUT, name.split(",")[0]), "--quiet",
                            *more], stdout=subprocess.PIPE if not more
                           else None, text=True)
     if done.returncode:
@@ -88,7 +88,7 @@ def seat_step():
     run("watch_flags", "--watch", "live", "--first", "3", "--decisions",
         SAVED)
     run("blue")
-    print("\n" + RULE)
+    print(RULE)
     line("Blue team alone", measures("blue", "blue"))
     line("With a person in the watchtower", measures("watch_flags",
                                                      "watch_flags"))
