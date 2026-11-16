@@ -18,6 +18,8 @@ on**.
 
 It is a plugin, not a fork: NandaTown is used unchanged.
 
+A four-step walk-through, about six minutes, is in [DEMO.md](DEMO.md).
+
 ## Why records
 
 A job, a delivery, a verdict, a person's decision, a ballot and a rule are all
@@ -203,6 +205,7 @@ audit: that failure is the finding.
 | `make_scenarios.py`, `scenarios/` | The towns. |
 | `run.py`, `report.py`, `audit.py`, `verify.py` | Run, tabulate, audit, verify. |
 | `test_dharma.py` | Checks to run before and after a change. |
+| `demo.py`, `DEMO.md`, `demo/` | The demo, and the answers a person gave to one whole run. |
 
 ## Licence
 
