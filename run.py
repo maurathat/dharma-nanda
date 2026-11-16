@@ -2,6 +2,7 @@
 
 Usage: python run.py [--only name,name] [--seeds 1-20] [--out runs]
                      [--keep 1] [--watch policy|live|replay] [--first n]
+                     [--quiet]
                      [--decisions file.jsonl]
 
 Each run writes <out>/<scenario>/seed-<n>.json. The evidence bundle is kept
@@ -75,13 +76,25 @@ if __name__ == "__main__":
         names = [n for n in names if n in only.split(",")]
     jobs = [(n, s, out, keep) for n in names for s in span(arg("--seeds",
                                                                "1-20"))]
-    if watch == "live":
+    first, quiet = int(arg("--first", "0")), "--quiet" in sys.argv
+    pool = None
+    if watch == "live" or len(jobs) == 1:
         results = map(run, jobs)
     else:
-        results = multiprocessing.Pool().imap_unordered(run, jobs)
+        pool = multiprocessing.Pool()
+        results = pool.imap_unordered(run, jobs)
     for name, seed, failed in results:
-        print(f"{name}\t{seed}\t{','.join(failed) or 'none'}", flush=True)
-        if watch == "live":
+        if not quiet:
+            print(f"{name}\t{seed}\t{','.join(failed) or 'none'}",
+                  flush=True)
+        if watch == "live" and first:
+            with open(os.path.join(out, name, f"seed-{seed}.json")) as fh:
+                m = json.load(fh)
+            live = min(first, m["watch_cases"])
+            print(f"\nYou decided the first {live} cases. Saved answers"
+                  f" decided the other {m['watch_cases'] - live}."
+                  f" Right: {m['watch_right']} of {m['watch_cases']}.")
+        elif watch == "live":
             with open(os.path.join(out, name, f"seed-{seed}.json")) as fh:
                 m = json.load(fh)
             with open(os.environ["DHARMA_DECISIONS"]) as fh:
@@ -94,3 +107,6 @@ if __name__ == "__main__":
                   f" total {sum(secs):.0f} seconds.")
             print(f"Honest sellers suspended: {len(m['honest_suspended'])}"
                   f" of {m['honest']}. Buyers' net: {m['net']:,} cents.")
+    if pool:
+        pool.close()
+        pool.join()
