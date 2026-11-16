@@ -575,13 +575,17 @@ class Watchtower(SimAgent):
                                             "decision": raw})
 
     def decide(self, case_id, case, b) -> dict[str, Any]:
-        if case_id in self.saved:
+        # With DHARMA_WATCH_FIRST=n the first n cases are always put to the
+        # person, even if an answer is saved; otherwise a saved answer wins.
+        first = int(os.environ.get("DHARMA_WATCH_FIRST", "0") or 0)
+        ask = self.mode == "live" and (self.asked < first if first
+                                       else case_id not in self.saved)
+        if not ask and case_id in self.saved:
             s = self.saved[case_id]
             return {"decision": s["decision"], "injection": s["injection"],
                     "by": s["by"]}
         job, work = records.members(b["job"]), records.members(b["delivery"])
-        first = int(os.environ.get("DHARMA_WATCH_FIRST", "0") or 0)
-        if self.mode == "live" and (not first or self.asked < first):
+        if ask:
             book = ledger(self.api)
             self.asked += 1
             print(show_case(self.asked, job, work,
@@ -600,7 +604,7 @@ class Watchtower(SimAgent):
                  "injection": int(ans == "i"), "by": "person"}
             # How long the person took is kept beside the answer, outside
             # the trace, so a replay does not depend on it.
-            if self.path:
+            if self.path and case_id not in self.saved:
                 with open(self.path, "a", encoding="utf-8") as fh:
                     fh.write(json.dumps(dict(
                         d, case=case_id,

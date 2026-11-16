@@ -33,7 +33,8 @@ def describe(rid: str) -> str:
     if rid not in published:
         return "NOT PUBLISHED"
     m = records.members(published[rid])
-    c = {k: v for k, v in m["content"].items() if k != "kind"}
+    c = {k: v for k, v in m["content"].items()
+         if k not in ("kind", "job", "key")}
     text = json.dumps(c, ensure_ascii=False)
     return f"{m['content']['kind']:<10} by {m['owner']:<11} " \
         + (text if len(text) < 96 else text[:93] + "...")
