@@ -18,7 +18,7 @@ on**.
 
 It is a plugin, not a fork: NandaTown is used unchanged.
 
-A four-step walk-through, about six minutes, is in [DEMO.md](DEMO.md).
+A five-step walk-through is in [DEMO.md](DEMO.md). It puts a person in the loop at three levels: deciding cases, voting on a rule, and taking a second look at old strikes.
 
 ## Why records
 
@@ -184,7 +184,7 @@ Then, from `dharma-nanda` with the virtual environment active:
 | `python verify.py runs/council/seed-1` | NandaTown's own bundle check, then a second run that must give the same events. |
 | `python make_scenarios.py` | Rewrite the scenario files. |
 
-`evidence/` holds the seed 1 bundle of nine towns. Unpack one and verify it:
+`evidence/` holds the seed 1 bundle of thirteen towns; a test checks that every one still verifies. Unpack one and verify it:
 
 ```
 tar -xzf evidence/council-seed1.tar.gz -C /tmp

@@ -3,6 +3,7 @@ any record back through its parents.
 
 Usage: python audit.py <bundle>                 recompute and classify
        python audit.py <bundle> --trace <id>    print a record's ancestry
+                                    [--depth n]  only n levels of it
        python audit.py <bundle> --why <seller>  trace a seller's last strike
 
 An identity may be given by its first few characters.
@@ -44,7 +45,13 @@ def trace(rid: str) -> None:
     full = [r for r in published if r.startswith(rid)]
     if len(full) != 1:
         sys.exit(f"{len(full)} records start with {rid!r}")
+    limit = int(sys.argv[sys.argv.index("--depth") + 1]) \
+        if "--depth" in sys.argv else 99
     for depth, node in records.lineage(published, full[0]):
+        if depth > limit:
+            continue
+        if node.endswith(" (above)") and limit < 99:
+            node = node[:-len(" (above)")]
         if node.endswith(" (above)"):
             print(f"{'  ' * depth}{node[:12]}  (shown above)")
         else:

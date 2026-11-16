@@ -36,6 +36,10 @@ def replay(bundle: str) -> list[str]:
                     fh.write(json.dumps({
                         "case": e["subject"], "decision": d["decision"],
                         "injection": d["injection"], "by": d["by"]}) + "\n")
+                elif e["kind"] == "dn_vote":
+                    fh.write(json.dumps({
+                        "case": e["subject"], "vote": e["detail"]["vote"],
+                        "by": e["detail"]["by"]}) + "\n")
         os.environ.update(DHARMA_WATCH="replay", DHARMA_DECISIONS=path)
         engine = build_engine(spec)
         engine.run()

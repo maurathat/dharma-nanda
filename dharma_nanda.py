@@ -80,11 +80,21 @@ def panel_for(api, job_id: str) -> list[str]:
 
 # -- the work ---------------------------------------------------------------
 
-def make_task(api, key: str) -> str:
+EASY_PRICES = (100, 200, 300, 500)
+
+
+def make_task(api, key: str, easy: bool = False) -> str:
+    """An invoice to total. `easy` gives two lines of small round numbers,
+    for a person doing the sum in their head."""
     def h(k: str, n: int) -> int:
         return int(sha(f"{api._engine.spec.seed}|task|{key}|{k}")[:8], 16) % n
 
-    lines = [(1 + h(f"q{i}", 9), (1 + h(f"p{i}", 12)) * 50) for i in range(3)]
+    if easy:
+        lines = [(1 + h(f"q{i}", 4), EASY_PRICES[h(f"p{i}", 4)])
+                 for i in range(2)]
+    else:
+        lines = [(1 + h(f"q{i}", 9), (1 + h(f"p{i}", 12)) * 50)
+                 for i in range(3)]
     return ("Total this invoice in cents: "
             + "; ".join(f"{q} units at {p} cents each" for q, p in lines)
             + ".")
@@ -173,7 +183,8 @@ class Seller(SimAgent):
         answer = solve(job["content"]["task"])
         note = self.config.get("note", "")
         if quality == "wrong":
-            answer += 50 * (1 + int(luck(self.api, "off", job_id) * 9))
+            step = 100 if self.config.get("easy") else 50
+            answer += step * (1 + int(luck(self.api, "off", job_id) * 9))
         elif quality == "junk":
             answer, note = 0, JUNK_NOTE
         if inject:
@@ -285,7 +296,9 @@ class Buyer(SimAgent):
         for i in range(max(1, self.config.get("grind", 0))):
             # A grinding buyer rewrites the job until its friends are drawn.
             k = key if i == 0 else f"{key}-g{i}"
-            content = {"kind": "job", "task": make_task(self.api, k),
+            content = {"kind": "job",
+                       "task": make_task(self.api, k,
+                                         self.config.get("easy", False)),
                        "price": price, "round": self.round, "key": k}
             if not friends or 2 * len(friends & set(panel_for(
                     self.api, book.identify(records.build(
@@ -502,6 +515,25 @@ CHOICES = """  Check the answer yourself. A judge's claim is only a claim.
     r  the answer is wrong: refuse, one strike
     i  the note tries to instruct the judges: refuse, two strikes
   Your decision (a, r or i): """
+REVIEW_CHOICES = """  This delivery was refused, with two strikes, before the rule changed.
+    a  the answer was right: take the strikes back
+    r  the answer was wrong: the strikes stand
+    i  the note tried to instruct the judges: the strikes stand
+  Your decision (a, r or i): """
+WHY = {"split": "the judges disagreed",
+       "flag": "most judges flagged this delivery",
+       "review": "a second look at a seller already struck"}
+
+
+def saved_answers(path: str) -> dict[str, dict[str, Any]]:
+    """The answers people gave earlier, by case or proposal identity."""
+    out: dict[str, dict[str, Any]] = {}
+    if path and os.path.exists(path):
+        with open(path, encoding="utf-8") as fh:
+            for line in fh:
+                d = json.loads(line)
+                out[d["case"]] = d
+    return out
 
 
 def alias(name: str) -> str:
@@ -511,7 +543,8 @@ def alias(name: str) -> str:
 
 
 def show_case(number, job, work, verdicts, reason, chain) -> str:
-    lines = ["", "=" * 68, f"WATCHTOWER CASE {number} ({reason})",
+    lines = ["", "=" * 68,
+             f"WATCHTOWER CASE {number}: {WHY.get(reason, reason)}",
              f"  Task:      {job['content']['task']}",
              f"  Seller:    {alias(work['owner'])}",
              f"  Answer:    {work['content']['answer']}",
@@ -522,8 +555,10 @@ def show_case(number, job, work, verdicts, reason, chain) -> str:
                      f"{'accept' if c['accept'] else 'refuse'}"
                      f"{', and claims the note is an attempt to instruct'
                         ' the judges' if c['flag'] else ''}")
-    lines.append("  Record chain (newest first):")
-    lines += [f"    {'  ' * d}{r[:12]}  {what}" for d, r, what in chain[:10]]
+    if not os.environ.get("DHARMA_WATCH_BRIEF"):
+        lines.append("  Record chain (newest first):")
+        lines += [f"    {'  ' * d}{r[:12]}  {what}"
+                  for d, r, what in chain[:10]]
     return "\n".join(lines)
 
 
@@ -548,13 +583,8 @@ class Watchtower(SimAgent):
         self.asked = 0
         self.mode = os.environ.get("DHARMA_WATCH", "policy")
         self.path = os.environ.get("DHARMA_DECISIONS", "")
-        self.saved: dict[str, dict[str, Any]] = {}
-        if self.mode in ("replay", "live") and self.path \
-                and os.path.exists(self.path):
-            with open(self.path, encoding="utf-8") as fh:
-                for line in fh:
-                    d = json.loads(line)
-                    self.saved[d["case"]] = d
+        self.saved = saved_answers(self.path) \
+            if self.mode in ("replay", "live") else {}
 
     def handle_dn_case(self, msg):
         b, book = msg["body"], ledger(self.api)
@@ -599,7 +629,8 @@ class Watchtower(SimAgent):
                              if r in book.store]))
             ans, began = "", time.monotonic()
             while ans not in ("a", "r", "i"):
-                ans = input(CHOICES).strip().lower()[:1]
+                ans = input(REVIEW_CHOICES if case["content"]["reason"]
+                            == "review" else CHOICES).strip().lower()[:1]
             d = {"decision": "accept" if ans == "a" else "refuse",
                  "injection": int(ans == "i"), "by": "person"}
             # How long the person took is kept beside the answer, outside
@@ -755,21 +786,76 @@ class Council(SimAgent):
 
 @role("dn_member")
 class Member(SimAgent):
-    """A council member. config: vote (yes | no | evidence), bar (evidence:
-    the number of cited records needed for a yes)."""
+    """A council member. config: vote (yes | no | evidence | person), bar
+    (evidence: the number of cited records needed for a yes).
+
+    `person` puts the proposal to a person when DHARMA_WATCH is live, and
+    reads their saved vote on replay; with neither it votes on evidence.
+    """
 
     def handle_dn_proposal(self, msg):
         book = ledger(self.api)
         pid, rec = book.admit(msg["body"]["proposal"])
         if rec is None:
             return
-        vote = self.config.get("vote", "evidence")
+        vote, by = self.config.get("vote", "evidence"), "policy"
+        if vote == "person":
+            vote, by = self.ask(pid, rec)
         if vote == "evidence":
             vote = "yes" if rec["content"]["count"] \
                 >= self.config.get("bar", 3) else "no"
-        _, raw = book.publish(self.name, {"kind": "ballot", "vote": vote},
-                              [pid])
+        content = {"kind": "ballot", "vote": vote}
+        if self.config.get("vote") == "person":
+            content["by"] = by
+            self.api.observe("dn_vote", pid, {"vote": vote, "by": by})
+        _, raw = book.publish(self.name, content, [pid])
         self.api.reply(msg, "dn_ballot", {"ballot": raw})
+
+
+def show_proposal(book, rec) -> str:
+    change = rec["content"]["change"]
+    what = {"flag_refuses": "Stop refusing a delivery on judges' flags"
+            " alone. Send flagged deliveries to the watchtower.",
+            "tests": "Plant more test jobs each round."}
+    lines = ["", "=" * 68, "COUNCIL VOTE",
+             "  The chair proposes: "
+             + " ".join(what.get(k, f"set {k} to {v}")
+                        for k, v in change.items()),
+             f"  Evidence cited: {rec['content']['count']} settlements"]
+    for p in rec["parents"]:
+        c = book.read(p)["content"]
+        if c["kind"] != "settlement":
+            continue
+        lines.append(
+            f"    {p[:12]}  {alias(c['seller'])}: {c['outcome']}"
+            + (f"; {c['accepts']} of 3 judges accepted"
+               f" the answer, {c['flags']} flagged it"
+               if c["reason"] == "flag" else f"; {c['reason']}"))
+    return "\n".join(lines)
+
+
+def _ask(self, pid, rec) -> tuple[str, str]:
+    mode = os.environ.get("DHARMA_WATCH", "policy")
+    path = os.environ.get("DHARMA_DECISIONS", "")
+    saved = saved_answers(path) if mode in ("live", "replay") else {}
+    first = int(os.environ.get("DHARMA_WATCH_FIRST", "0") or 0)
+    if pid in saved and not (mode == "live" and first):
+        return saved[pid]["vote"], saved[pid]["by"]
+    if mode != "live":
+        return "evidence", "policy"
+    print(show_proposal(ledger(self.api), rec))
+    ans = ""
+    while ans not in ("y", "n"):
+        ans = input("  Vote for the change? (y or n): ").strip().lower()[:1]
+    vote = "yes" if ans == "y" else "no"
+    if path and pid not in saved:
+        with open(path, "a", encoding="utf-8") as fh:
+            fh.write(json.dumps({"case": pid, "vote": vote,
+                                 "by": "person"}) + "\n")
+    return vote, "person"
+
+
+Member.ask = _ask
 
 
 # -- measures, from the trace alone -------------------------------------------
@@ -795,7 +881,7 @@ def measure(events: list[dict[str, Any]], cast: dict[str, Any],
            "altered_sent": 0, "altered_judged": 0, "reencoded_sent": 0,
            "reencoded_lost": 0, "honest_struck_for_altered": 0,
            "watch_cases": 0, "watch_held": 0, "watch_right": 0,
-           "watch_by_person": 0, "watch_person_right": 0, "rule_changes": [], "fees": 0, "stolen": 0,
+           "watch_by_person": 0, "watch_person_right": 0, "rule_changes": [], "fees": 0, "votes_by_person": 0, "stolen": 0,
            "red_buyer_paid": 0,
            "pardons": 0}
     suspend_at = DEFAULT_RULES["suspend_at"]
@@ -818,6 +904,8 @@ def measure(events: list[dict[str, Any]], cast: dict[str, Any],
             out["record_refused"] += 1
         elif k == "dn_standing":
             strikes[s] = d["strikes"]
+        elif k == "dn_vote":
+            out["votes_by_person"] += d["by"] == "person"
         elif k == "dn_pardon":
             out["pardons"] += 1
         elif k == "dn_no_seller":

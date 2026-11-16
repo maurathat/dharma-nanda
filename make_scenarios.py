@@ -38,7 +38,7 @@ CHECKS = {"none": ("dharma.records.v1", False),
 def town(name, text, blue, watch, council, relay="reencode",
          data_facts="dharma.records.v1", verify=True, red=True,
          every=2, need=3, only_route=False, care=0.98, capacity=4,
-         rules=None, attack=""):
+         rules=None, attack="", easy=False, person_votes=False):
     agents = [{"name": "council", "role": "dn_council", "config": {
         "members": ["member-1", "member-2", "member-3"] if council else [],
         "every": every, "need": need, "watch": watch,
@@ -47,6 +47,8 @@ def town(name, text, blue, watch, council, relay="reencode",
     # one wants two cases more: a proposal passes 2 to 1.
     votes = [{"vote": "yes"}, {"vote": "evidence", "bar": need},
              {"vote": "evidence", "bar": need + 2}]
+    if person_votes:          # the member who wants evidence is a person
+        votes[1] = {"vote": "person", "bar": need}
     agents += [{"name": f"member-{i + 1}", "role": "dn_member", "config": v}
                for i, v in enumerate(votes)]
     agents.append({"name": "relay-1", "role": "dn_relay",
@@ -95,6 +97,10 @@ def town(name, text, blue, watch, council, relay="reencode",
                                       friends=["judge-4", "judge-5"])})
     agents.append({"name": "tester-1", "role": "dn_tester", "config": dict(
         buyer, rounds=ROUNDS if blue else 0, watch="")})
+    if easy:
+        for a in agents:
+            if a["role"] in ("dn_seller", "dn_buyer", "dn_tester"):
+                a["config"]["easy"] = True
     spec = {"name": name, "description": text, "seed": 1,
             "layers": {"trust": "dharma.ladder.v1", "data_facts": data_facts},
             "plugin_files": ["../dharma_nanda.py"],
@@ -162,3 +168,13 @@ for attack, what in ATTACKS.items():
     town(f"atk_{attack}_council", f"Blue team, watchtower and a fast"
          f" council. {what}", True, True, True, every=1, need=2,
          attack=attack)
+
+# The demo towns: sums a person can do in their head.
+town("demo_blue", "Demo. Blue team alone, easy sums. Red team active.", True,
+     False, False, easy=True)
+town("demo_watch", "Demo. Blue team and a watchtower that is sent split"
+     " panels and flagged deliveries, easy sums. Red team active.", True,
+     True, False, rules={"flag_refuses": 0}, easy=True)
+town("demo_council", "Demo. Blue team, a watchtower and a fast council with"
+     " one member who is a person, easy sums. Red team active.", True, True,
+     True, every=1, need=2, easy=True, person_votes=True)
