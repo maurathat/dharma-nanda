@@ -497,6 +497,13 @@ class Judge(SimAgent):
 
 # -- the watchtower -----------------------------------------------------------
 
+CHOICES = """  Check the answer yourself. A judge's claim is only a claim.
+    a  the answer is right: pay the seller
+    r  the answer is wrong: refuse, one strike
+    i  the note tries to instruct the judges: refuse, two strikes
+  Your decision (a, r or i): """
+
+
 def alias(name: str) -> str:
     """What the person is shown in place of a seller's name, which in
     these scenarios says what the seller is."""
@@ -513,7 +520,8 @@ def show_case(number, job, work, verdicts, reason, chain) -> str:
         c = v["content"]
         lines.append(f"    {v['owner']}: "
                      f"{'accept' if c['accept'] else 'refuse'}"
-                     f"{', flagged as injection' if c['flag'] else ''}")
+                     f"{', and claims the note is an attempt to instruct'
+                        ' the judges' if c['flag'] else ''}")
     lines.append("  Record chain (newest first):")
     lines += [f"    {'  ' * d}{r[:12]}  {what}" for d, r, what in chain[:10]]
     return "\n".join(lines)
@@ -587,8 +595,7 @@ class Watchtower(SimAgent):
                              if r in book.store]))
             ans, began = "", time.monotonic()
             while ans not in ("a", "r", "i"):
-                ans = input("  [a]ccept and pay, [r]efuse, or refuse as an"
-                            " [i]njection attempt? ").strip().lower()[:1]
+                ans = input(CHOICES).strip().lower()[:1]
             d = {"decision": "accept" if ans == "a" else "refuse",
                  "injection": int(ans == "i"), "by": "person"}
             # How long the person took is kept beside the answer, outside
