@@ -497,10 +497,16 @@ class Judge(SimAgent):
 
 # -- the watchtower -----------------------------------------------------------
 
-def show_case(job, work, verdicts, reason, chain) -> str:
-    lines = ["", "=" * 68, f"WATCHTOWER CASE ({reason})",
+def alias(name: str) -> str:
+    """What the person is shown in place of a seller's name, which in
+    these scenarios says what the seller is."""
+    return "seller " + sha(name)[:4]
+
+
+def show_case(number, job, work, verdicts, reason, chain) -> str:
+    lines = ["", "=" * 68, f"WATCHTOWER CASE {number} ({reason})",
              f"  Task:      {job['content']['task']}",
-             f"  Seller:    {work['owner']}",
+             f"  Seller:    {alias(work['owner'])}",
              f"  Answer:    {work['content']['answer']}",
              f"  Note:      {work['content']['note'] or '(none)'}", "  Judges:"]
     for v in verdicts:
@@ -520,14 +526,18 @@ class Watchtower(SimAgent):
 
     DHARMA_WATCH picks who sits there:
       policy  (default) the stand-in policy
-      live    ask at the terminal; answers are saved to DHARMA_DECISIONS
-      replay  read answers from DHARMA_DECISIONS
+      live    ask at the terminal; answers are saved to DHARMA_DECISIONS.
+              With DHARMA_WATCH_FIRST=n the person decides the first n
+              cases and the stand-in policy the rest
+      replay  read answers from DHARMA_DECISIONS; a case with no saved
+              answer goes to the stand-in policy, as it did live
     Every decision is in the trace (`dn_watch`), so a run a person decided
     can be run again without them.
     """
 
     def on_start(self):
         self.seen: dict[int, int] = {}
+        self.asked = 0
         self.mode = os.environ.get("DHARMA_WATCH", "policy")
         self.path = os.environ.get("DHARMA_DECISIONS", "")
         self.saved: dict[str, dict[str, Any]] = {}
@@ -562,15 +572,17 @@ class Watchtower(SimAgent):
             return {"decision": s["decision"], "injection": s["injection"],
                     "by": s["by"]}
         job, work = records.members(b["job"]), records.members(b["delivery"])
-        if self.mode == "replay":
-            raise RuntimeError(f"no saved decision for case {case_id}")
-        if self.mode == "live":
+        first = int(os.environ.get("DHARMA_WATCH_FIRST", "0") or 0)
+        if self.mode == "live" and (not first or self.asked < first):
             book = ledger(self.api)
-            print(show_case(job, work,
+            self.asked += 1
+            print(show_case(self.asked, job, work,
                             [records.members(v) for v in b["verdicts"]],
                             case["content"]["reason"],
-                            [(d, r, book.read(r)["content"]["kind"]
-                              + " by " + book.read(r)["owner"])
+                            [(d, r, book.read(r)["content"]["kind"] + " by "
+                              + (alias(work["owner"])
+                                 if book.read(r)["owner"] == work["owner"]
+                                 else book.read(r)["owner"]))
                              for d, r in records.lineage(book.store, case_id)
                              if r in book.store]))
             ans, began = "", time.monotonic()
@@ -772,7 +784,7 @@ def measure(events: list[dict[str, Any]], cast: dict[str, Any],
            "altered_sent": 0, "altered_judged": 0, "reencoded_sent": 0,
            "reencoded_lost": 0, "honest_struck_for_altered": 0,
            "watch_cases": 0, "watch_held": 0, "watch_right": 0,
-           "watch_by_person": 0, "rule_changes": [], "fees": 0, "stolen": 0,
+           "watch_by_person": 0, "watch_person_right": 0, "rule_changes": [], "fees": 0, "stolen": 0,
            "red_buyer_paid": 0,
            "pardons": 0}
     suspend_at = DEFAULT_RULES["suspend_at"]
@@ -805,8 +817,10 @@ def measure(events: list[dict[str, Any]], cast: dict[str, Any],
             out["watch_by_person"] += d["by"] == "person"
             w = work.get(d["job"], {})
             should = w.get("quality") == "good" and not w.get("inject")
-            out["watch_right"] += d["decision"] != "hold" and \
+            right = d["decision"] != "hold" and \
                 (d["decision"] == "accept") == should
+            out["watch_right"] += right
+            out["watch_person_right"] += right and d["by"] == "person"
         elif k == "dn_rule" and d["passed"]:
             out["rule_changes"].append({"round": d["round"],
                                         "change": d["change"]})

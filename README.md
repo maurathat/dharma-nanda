@@ -174,8 +174,9 @@ Then, from `dharma-nanda` with the virtual environment active:
 | --- | --- |
 | `python run.py` | Every town over seeds 1 to 20 (under a minute). Measures go to `runs/`. |
 | `python report.py > RESULTS.md` | Rebuild the tables. |
-| `python run.py --only council --seeds 1 --watch live` | **Sit in the watchtower.** Each case is shown with the task, the answer, the judges' verdicts and the chain of records behind it. Your answers are saved to `decisions.jsonl`. |
+| `python run.py --only council --seeds 1 --watch live` | **Sit in the watchtower.** Each case is shown with the task, the answer, the judges' verdicts and the chain of records behind it. Seller names are hidden. Your answers, and the seconds each took, are saved to `decisions.jsonl`. |
 | `python run.py --only council --seeds 1 --watch replay` | Run it again from your saved answers. |
+| `python run.py --only watch_flags --seeds 1 --watch live --first 3` | Decide only the first three cases; the stand-in policy takes the rest. |
 | `python audit.py runs/council/seed-1` | Recompute every record's identity and classify every parent link. |
 | `python audit.py runs/council/seed-1 --why seller-3` | Trace a seller's last strike back to the job, the verdicts, the rule in force, and the ballots and evidence behind that rule. |
 | `python verify.py runs/council/seed-1` | NandaTown's own bundle check, then a second run that must give the same events. |

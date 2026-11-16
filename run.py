@@ -1,7 +1,7 @@
 """Run scenarios over a range of seeds and keep the measures.
 
 Usage: python run.py [--only name,name] [--seeds 1-20] [--out runs]
-                     [--keep 1] [--watch policy|live|replay]
+                     [--keep 1] [--watch policy|live|replay] [--first n]
                      [--decisions file.jsonl]
 
 Each run writes <out>/<scenario>/seed-<n>.json. The evidence bundle is kept
@@ -9,7 +9,8 @@ beside it (seed-<n>/) for the seeds named by --keep.
 
 --watch live puts you in the watchtower: each case is shown at the terminal
 and your answers are saved to the decisions file, so the same run can be
-repeated later with --watch replay. Use one scenario and one seed.
+repeated later with --watch replay. Use one scenario and one seed. With
+--first n you decide the first n cases and the stand-in policy the rest.
 """
 
 import json
@@ -65,6 +66,7 @@ if __name__ == "__main__":
     keep = frozenset(span(arg("--keep", "1")))
     watch = arg("--watch", "policy")
     os.environ["DHARMA_WATCH"] = watch
+    os.environ["DHARMA_WATCH_FIRST"] = arg("--first", "0")
     os.environ["DHARMA_DECISIONS"] = os.path.abspath(
         arg("--decisions", "decisions.jsonl")) if watch != "policy" else ""
     names = sorted(f[:-5] for f in os.listdir(os.path.join(HERE, "scenarios"))
@@ -79,3 +81,16 @@ if __name__ == "__main__":
         results = multiprocessing.Pool().imap_unordered(run, jobs)
     for name, seed, failed in results:
         print(f"{name}\t{seed}\t{','.join(failed) or 'none'}", flush=True)
+        if watch == "live":
+            with open(os.path.join(out, name, f"seed-{seed}.json")) as fh:
+                m = json.load(fh)
+            with open(os.environ["DHARMA_DECISIONS"]) as fh:
+                secs = sorted(json.loads(line).get("seconds", 0)
+                              for line in fh)
+            print(f"\nYou decided {m['watch_by_person']} of"
+                  f" {m['watch_cases']} cases and got"
+                  f" {m['watch_person_right']} right. Median time per"
+                  f" case: {secs[len(secs) // 2] if secs else 0} seconds;"
+                  f" total {sum(secs):.0f} seconds.")
+            print(f"Honest sellers suspended: {len(m['honest_suspended'])}"
+                  f" of {m['honest']}. Buyers' net: {m['net']:,} cents.")
