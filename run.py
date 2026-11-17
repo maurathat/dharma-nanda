@@ -91,9 +91,13 @@ if __name__ == "__main__":
             with open(os.path.join(out, name, f"seed-{seed}.json")) as fh:
                 m = json.load(fh)
             live = min(first, m["watch_cases"])
-            print(f"\nYou decided the first {live} cases. Saved answers"
-                  f" decided the other {m['watch_cases'] - live}."
-                  f" Right: {m['watch_right']} of {m['watch_cases']}.")
+            saved = m["watch_by_person"] - live
+            rest = m["watch_cases"] - m["watch_by_person"]
+            print(f"\nYou decided the first {live} cases."
+                  + (f" A person's saved answers decided {saved} more."
+                     if saved else "")
+                  + (f" The stand-in policy decided {rest}." if rest else "")
+                  + f" Right: {m['watch_right']} of {m['watch_cases']}.")
         elif watch == "live":
             with open(os.path.join(out, name, f"seed-{seed}.json")) as fh:
                 m = json.load(fh)

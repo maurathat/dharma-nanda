@@ -91,3 +91,19 @@ def test_bundle_verifies_and_replays(tmp_path):
         done = subprocess.run([sys.executable, os.path.join(HERE, tool),
                                bundle], capture_output=True, text=True)
         assert done.returncode == 0, done.stdout + done.stderr
+
+
+def test_every_evidence_bundle_still_verifies(tmp_path):
+    import glob
+    import tarfile
+
+    packs = sorted(glob.glob(os.path.join(HERE, "evidence", "*.tar.gz")))
+    assert packs
+    for pack in packs:
+        with tarfile.open(pack) as tar:
+            tar.extractall(tmp_path, filter="data")
+    done = subprocess.run(
+        [sys.executable, os.path.join(HERE, "verify.py")]
+        + sorted(str(p) for p in tmp_path.iterdir()),
+        capture_output=True, text=True)
+    assert done.returncode == 0, done.stdout + done.stderr
