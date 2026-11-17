@@ -6,6 +6,8 @@
   python demo.py trace    one of those decisions, back through its records
   python demo.py council  you on the council and in the watchtower: a vote
                           on a rule, second looks at old strikes, new cases
+  python demo.py show     the run you just decided, replayed in a browser
+                          by NandaTown's own visualizer
 
 The demo towns use sums you can do in your head. `seat` puts the first
 three cases to you; the rest come from demo/decisions-watch-seed7.jsonl
@@ -153,7 +155,27 @@ def trace_step():
     print(RULE)
 
 
-STEPS = {"bytes": bytes_step, "attack": attack_step, "seat": seat_step,
+def show_step():
+    """NandaTown's own visualizer on the last demo run: the agents on a
+    map, messages moving between them, the event log and the verdict."""
+    import webbrowser
+    from nandatown.bundle import load_bundle
+    from nandatown.visualizer import write_visualizer
+
+    found = [os.path.join(OUT, n, n, f"seed-{SEED}")
+             for n in ("demo_council", "demo_watch")]
+    found = [b for b in found if os.path.isdir(b)]
+    if not found:
+        sys.exit("run `python demo.py seat` or `python demo.py council`"
+                 " first")
+    bundle = max(found, key=os.path.getmtime)
+    page = os.path.join(OUT, "town.html")
+    write_visualizer(load_bundle(bundle), page)
+    print(f"{bundle}\nreplayed in {page}\nPress Play in the browser.")
+    webbrowser.open("file://" + page)
+
+
+STEPS = {"show": show_step, "bytes": bytes_step, "attack": attack_step, "seat": seat_step,
          "trace": trace_step, "council": council_step}
 if len(sys.argv) != 2 or sys.argv[1] not in STEPS:
     sys.exit(__doc__)

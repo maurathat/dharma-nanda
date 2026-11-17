@@ -19,13 +19,18 @@ import records  # noqa: E402
 bundle = sys.argv[1]
 with open(os.path.join(bundle, "profile.json"), encoding="utf-8") as fh:
     plugin = json.load(fh)["layers"]["data_facts"]
-published, strikes = {}, {}
+published, strikes, keys, sigs = {}, {}, {}, {}
 with open(os.path.join(bundle, "events.jsonl"), encoding="utf-8") as fh:
     for line in fh:
-        if '"dn_record"' in line or '"dn_standing"' in line:
+        if '"dn_record"' in line or '"dn_standing"' in line \
+                or '"dn_key"' in line:
             e = json.loads(line)
             if e["kind"] == "dn_record":
                 published[e["subject"]] = e["detail"]["raw"]
+                if "sig" in e["detail"]:
+                    sigs[e["subject"]] = e["detail"]["sig"]
+            elif e["kind"] == "dn_key":
+                keys[e["subject"]] = e["detail"]["public"]
             elif e["kind"] == "dn_standing":
                 strikes[e["subject"]] = e["detail"]["record"]
 
@@ -75,6 +80,14 @@ else:
     for child, parent in result["edges"]["unresolved"][:5]:
         print(f"    unresolved: {child[:12]} ({describe(child)[:40]}...)"
               f" names {parent[:12]}")
-    bad = result["unsound"] or any(result["edges"][s] for s in
-                                   records.EDGE_STATES[1:])
+    signed = records.audit_signatures(published, keys, sigs)
+    print(f"  signed by the key registered to the named owner: "
+          f"{len(signed['valid'])}")
+    print(f"  signature does not match the named owner: "
+          f"{len(signed['invalid'])}")
+    print(f"  unsigned: {len(signed['unsigned'])}")
+    for rid in (signed["invalid"] + signed["unsigned"])[:5]:
+        print(f"    {rid[:12]}  {describe(rid)[:70]}")
+    bad = result["unsound"] or signed["invalid"] or signed["unsigned"] \
+        or any(result["edges"][s] for s in records.EDGE_STATES[1:])
     sys.exit(1 if bad else 0)

@@ -87,18 +87,25 @@ print("All deliveries start out through one relay. `No check` takes the bytes as
       " identity is computed. A relay whose delivery does not verify takes"
       " a strike, and at three strikes sellers switch to a second relay"
       " that passes bytes unchanged. In the last two rows there is no"
-      " second relay.\n")
+      " second relay. The two signature checks also require the seller's"
+      " Ed25519 signature: over the bytes the record was published in, or"
+      " over its canonical identity.\n")
 RELAYS = (("honest", "passes bytes unchanged"),
           ("reencode", "re-encodes every record (same data, different"
            " bytes)"),
-          ("alter", "changes the answer in 30% of deliveries"))
+          ("alter", "changes the answer in 30% of deliveries"),
+          ("forge", "changes the answer in 30% of deliveries and publishes"
+           " the result in the seller's name"))
 CHECKS = (("none", "No check"), ("town", "NandaTown fingerprint"),
-          ("canonical", "Canonical record (dataset.v1)"))
+          ("canonical", "Canonical record (dataset.v1)"),
+          ("bytesig", "Canonical record, signature over the bytes"),
+          ("signed", "Canonical record, signature over the identity"))
 rows = []
 CASES = [(f"rec_{relay}_{check}", f"Relay {what}", label)
-         for relay, what in RELAYS for check, label in CHECKS]
+         for relay, what in RELAYS for check, label in CHECKS
+         if load(f"rec_{relay}_{check}")]
 CASES += [(f"rec_only_{check}", "Relay re-encodes every record and is the"
-           " only route", label) for check, label in CHECKS[1:]]
+           " only route", label) for check, label in CHECKS[1:3]]
 for name, what, label in CASES:
     rs = load(name)
     rows.append([what, label] + [

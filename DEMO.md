@@ -43,6 +43,12 @@ in every run, and if it is the only route the market delivers nothing. With
 canonical records nothing is lost, and a relay that really changes answers is
 caught before any changed delivery reaches a judge.
 
+Identity says what a record contains, not who wrote it. A relay that
+publishes its changed record under the seller's name passes the identity
+check; the seller's signature stops it. And the signature has to be over the
+canonical identity: over the bytes, it breaks on re-encoding like the
+fingerprint does.
+
 ## Step 2: what the blue team alone does (1 minute)
 
 ```
@@ -120,6 +126,17 @@ It ends with the comparison (3 of 6 honest sellers suspended with the blue
 team alone, 1 of 6 here, two strikes taken back) and the new rule traced to
 the proposal, the earlier rule and the three ballots, yours marked
 `"by": "person"`.
+
+## Optional: watch the town (1 minute)
+
+```
+python demo.py show
+```
+
+Opens the run you just decided in NandaTown's own visualizer: the agents on
+a map, messages moving between them as the timeline plays, the event log,
+and the verdict with this project's checks (`records_recompute`,
+`records_signed`, `lineage_resolves`) alongside NandaTown's. Press Play.
 
 ## If something goes wrong
 

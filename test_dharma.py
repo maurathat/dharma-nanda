@@ -48,6 +48,32 @@ def test_audit_names_every_edge_state_it_finds():
     assert len(edges["failed"]) == 1 and not edges["verified"]
 
 
+def test_signature_over_identity_survives_reencoding_only():
+    key = records.private_key(1, "Zoë")
+    public = records.public_hex(key)
+    rid, again = records.canonical_id(RAW), records.reencode(RAW)
+    by_id, by_bytes = records.sign(key, rid), records.sign(key, RAW)
+    assert records.signed_by(public, records.canonical_id(again), by_id)
+    assert not records.signed_by(public, again, by_bytes)
+    other = records.public_hex(records.private_key(1, "someone else"))
+    assert not records.signed_by(other, rid, by_id)
+
+
+def test_forged_records_pass_the_identity_check_and_fail_the_signature(
+        tmp_path):
+    for name, stopped in (("rec_forge_canonical", False),
+                          ("rec_forge_signed", True)):
+        _, stages, events = run(name, tmp_path)
+        forged = sum(e["kind"] == "dn_relayed" and e["detail"]["did"] ==
+                     "forged" for e in events)
+        refused = sum(e["kind"] == "dn_record_refused" for e in events)
+        assert forged and (refused == forged) == stopped
+        # the forgery is published, so lineage resolves; only the
+        # signature audit sees it
+        assert stages["lineage_resolves"].status == "passed"
+        assert stages["records_signed"].status == "failed"
+
+
 def run(name, tmp_path, seed=3):
     bundle, result = run_lab(os.path.join(HERE, "scenarios", name + ".yaml"),
                              str(tmp_path / name), seed=seed)
