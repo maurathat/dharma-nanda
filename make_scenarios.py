@@ -30,15 +30,19 @@ LEVELS = {
     "council": (True, True, True, "Blue team, watchtower, and a council"
                 " that changes the rules mid-run."),
 }
-CHECKS = {"none": ("dharma.records.v1", False),
-          "town": ("dharma.records.town.v1", True),
-          "canonical": ("dharma.records.v1", True)}
+# name: (identity plugin, look the record up on receipt, signature check)
+CHECKS = {"none": ("dharma.records.v1", False, ""),
+          "town": ("dharma.records.town.v1", True, ""),
+          "canonical": ("dharma.records.v1", True, ""),
+          "bytesig": ("dharma.records.v1", True, "bytes"),
+          "signed": ("dharma.records.v1", True, "id")}
 
 
 def town(name, text, blue, watch, council, relay="reencode",
          data_facts="dharma.records.v1", verify=True, red=True,
          every=2, need=3, only_route=False, care=0.98, capacity=4,
-         rules=None, attack="", easy=False, person_votes=False):
+         rules=None, attack="", easy=False, person_votes=False,
+         check_sig="id"):
     agents = [{"name": "council", "role": "dn_council", "config": {
         "members": ["member-1", "member-2", "member-3"] if council else [],
         "every": every, "need": need, "watch": watch,
@@ -87,6 +91,7 @@ def town(name, text, blue, watch, council, relay="reencode",
     agents.append({"name": "watchtower", "role": "dn_watchtower",
                    "config": {"capacity": capacity, "care": care}})
     buyer = {"rounds": ROUNDS, "inspect": blue, "verify": verify and blue,
+             "check_sig": check_sig if verify and blue else "",
              "ladder": blue, "judge_fee": 40, "watch": "watchtower" if watch else "",
              "balance_cents": 1000 * ROUNDS * 3}
     agents += [{"name": f"buyer-{i + 1}", "role": "dn_buyer",
@@ -116,17 +121,20 @@ for level, (blue, watch, council, text) in LEVELS.items():
     town(level, text + " Red team active.", blue, watch, council)
 town("calm", "No red team and no oversight: the town at its best.", False,
      False, False, red=False)
-for relay in ("honest", "reencode", "alter"):
-    for check, (plugin, verify) in CHECKS.items():
+for relay in ("honest", "reencode", "alter", "forge"):
+    for check, (plugin, verify, sig) in CHECKS.items():
+        if relay in ("honest", "alter") and check == "bytesig":
+            continue
         town(f"rec_{relay}_{check}",
              f"Blue-team town. Relay: {relay}. Record check on receipt:"
              f" {check}.", True, False, False, relay=relay,
-             data_facts=plugin, verify=verify)
+             data_facts=plugin, verify=verify, check_sig=sig)
 for check in ("town", "canonical"):
     town(f"rec_only_{check}",
          "Blue-team town. The relay re-encodes and is the only route."
          f" Record check on receipt: {check}.", True, False, False,
-         relay="reencode", data_facts=CHECKS[check][0], only_route=True)
+         relay="reencode", data_facts=CHECKS[check][0], only_route=True,
+         check_sig="")
 town("council_fast", LEVELS["council"][3] + " The council reviews every"
      " round and acts on two cases. Red team active.", True, True, True,
      every=1, need=2)

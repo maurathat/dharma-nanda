@@ -16,19 +16,28 @@ Scripted agents, 20 seeds per town, every town with the same cast: 6 honest sell
 
 ## Records: the same blue-team town, three ways of checking a delivery on receipt
 
-All deliveries start out through one relay. `No check` takes the bytes as they arrive. `NandaTown fingerprint` and `Canonical record (dataset.v1)` both look the arriving record up by its identity and ask for it once more if it is unknown; they differ only in how identity is computed. A relay whose delivery does not verify takes a strike, and at three strikes sellers switch to a second relay that passes bytes unchanged. In the last two rows there is no second relay.
+All deliveries start out through one relay. `No check` takes the bytes as they arrive. `NandaTown fingerprint` and `Canonical record (dataset.v1)` both look the arriving record up by its identity and ask for it once more if it is unknown; they differ only in how identity is computed. A relay whose delivery does not verify takes a strike, and at three strikes sellers switch to a second relay that passes bytes unchanged. In the last two rows there is no second relay. The two signature checks also require the seller's Ed25519 signature: over the bytes the record was published in, or over its canonical identity.
 
 | Relay | Check on receipt | Value delivered | Good work refused because its record did not verify | Altered deliveries sent | Altered deliveries that reached the judges | Strikes on honest sellers for an answer the relay changed | Honest sellers suspended (of 6) | Altering relays suspended | Honest relays suspended | Parent links the audit could not resolve |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
 | Relay passes bytes unchanged | No check | 115,760 ± 2,160 | 0.0 ± 0.0 | 0.0 ± 0.0 | 0.0 ± 0.0 | 0.0 ± 0.0 | 2.7 ± 0.5 | 0.0 ± 0.0 | 0.0 ± 0.0 | 0.0 ± 0.0 |
 | Relay passes bytes unchanged | NandaTown fingerprint | 115,760 ± 2,160 | 0.0 ± 0.0 | 0.0 ± 0.0 | 0.0 ± 0.0 | 0.0 ± 0.0 | 2.7 ± 0.5 | 0.0 ± 0.0 | 0.0 ± 0.0 | 0.0 ± 0.0 |
 | Relay passes bytes unchanged | Canonical record (dataset.v1) | 115,760 ± 2,160 | 0.0 ± 0.0 | 0.0 ± 0.0 | 0.0 ± 0.0 | 0.0 ± 0.0 | 2.7 ± 0.5 | 0.0 ± 0.0 | 0.0 ± 0.0 | 0.0 ± 0.0 |
+| Relay passes bytes unchanged | Canonical record, signature over the identity | 115,760 ± 2,160 | 0.0 ± 0.0 | 0.0 ± 0.0 | 0.0 ± 0.0 | 0.0 ± 0.0 | 2.7 ± 0.5 | 0.0 ± 0.0 | 0.0 ± 0.0 | 0.0 ± 0.0 |
 | Relay re-encodes every record (same data, different bytes) | No check | 115,760 ± 2,160 | 0.0 ± 0.0 | 0.0 ± 0.0 | 0.0 ± 0.0 | 0.0 ± 0.0 | 2.7 ± 0.5 | 0.0 ± 0.0 | 0.0 ± 0.0 | 0.0 ± 0.0 |
 | Relay re-encodes every record (same data, different bytes) | NandaTown fingerprint | 114,800 ± 2,222 | 0.4 ± 0.3 | 0.0 ± 0.0 | 0.0 ± 0.0 | 0.0 ± 0.0 | 2.7 ± 0.5 | 0.0 ± 0.0 | 1.0 ± 0.0 | 0.0 ± 0.0 |
 | Relay re-encodes every record (same data, different bytes) | Canonical record (dataset.v1) | 115,760 ± 2,160 | 0.0 ± 0.0 | 0.0 ± 0.0 | 0.0 ± 0.0 | 0.0 ± 0.0 | 2.7 ± 0.5 | 0.0 ± 0.0 | 0.0 ± 0.0 | 0.0 ± 0.0 |
+| Relay re-encodes every record (same data, different bytes) | Canonical record, signature over the bytes | 114,800 ± 2,222 | 0.4 ± 0.3 | 0.0 ± 0.0 | 0.0 ± 0.0 | 0.0 ± 0.0 | 2.7 ± 0.5 | 0.0 ± 0.0 | 1.0 ± 0.0 | 0.0 ± 0.0 |
+| Relay re-encodes every record (same data, different bytes) | Canonical record, signature over the identity | 115,760 ± 2,160 | 0.0 ± 0.0 | 0.0 ± 0.0 | 0.0 ± 0.0 | 0.0 ± 0.0 | 2.7 ± 0.5 | 0.0 ± 0.0 | 0.0 ± 0.0 | 0.0 ± 0.0 |
 | Relay changes the answer in 30% of deliveries | No check | 54,720 ± 5,368 | 0.0 ± 0.0 | 21.1 ± 1.1 | 21.1 ± 1.1 | 15.8 ± 1.2 | 6.0 ± 0.0 | 0.0 ± 0.0 | 0.0 ± 0.0 | 57.0 ± 3.3 |
 | Relay changes the answer in 30% of deliveries | NandaTown fingerprint | 114,960 ± 2,160 | 0.4 ± 0.3 | 3.4 ± 0.3 | 0.0 ± 0.0 | 0.0 ± 0.0 | 2.6 ± 0.4 | 1.0 ± 0.0 | 0.0 ± 0.0 | 0.0 ± 0.0 |
 | Relay changes the answer in 30% of deliveries | Canonical record (dataset.v1) | 114,960 ± 2,160 | 0.4 ± 0.3 | 3.4 ± 0.3 | 0.0 ± 0.0 | 0.0 ± 0.0 | 2.6 ± 0.4 | 1.0 ± 0.0 | 0.0 ± 0.0 | 0.0 ± 0.0 |
+| Relay changes the answer in 30% of deliveries | Canonical record, signature over the identity | 114,960 ± 2,160 | 0.4 ± 0.3 | 3.4 ± 0.3 | 0.0 ± 0.0 | 0.0 ± 0.0 | 2.6 ± 0.4 | 1.0 ± 0.0 | 0.0 ± 0.0 | 0.0 ± 0.0 |
+| Relay changes the answer in 30% of deliveries and publishes the result in the seller's name | No check | 54,720 ± 5,368 | 0.0 ± 0.0 | 21.1 ± 1.1 | 21.1 ± 1.1 | 15.8 ± 1.2 | 6.0 ± 0.0 | 0.0 ± 0.0 | 0.0 ± 0.0 | 0.0 ± 0.0 |
+| Relay changes the answer in 30% of deliveries and publishes the result in the seller's name | NandaTown fingerprint | 54,720 ± 5,368 | 0.0 ± 0.0 | 21.1 ± 1.1 | 21.1 ± 1.1 | 15.8 ± 1.2 | 6.0 ± 0.0 | 0.0 ± 0.0 | 0.0 ± 0.0 | 0.0 ± 0.0 |
+| Relay changes the answer in 30% of deliveries and publishes the result in the seller's name | Canonical record (dataset.v1) | 54,720 ± 5,368 | 0.0 ± 0.0 | 21.1 ± 1.1 | 21.1 ± 1.1 | 15.8 ± 1.2 | 6.0 ± 0.0 | 0.0 ± 0.0 | 0.0 ± 0.0 | 0.0 ± 0.0 |
+| Relay changes the answer in 30% of deliveries and publishes the result in the seller's name | Canonical record, signature over the bytes | 114,960 ± 2,160 | 0.4 ± 0.3 | 3.4 ± 0.3 | 0.0 ± 0.0 | 0.0 ± 0.0 | 2.6 ± 0.4 | 1.0 ± 0.0 | 0.0 ± 0.0 | 0.0 ± 0.0 |
+| Relay changes the answer in 30% of deliveries and publishes the result in the seller's name | Canonical record, signature over the identity | 114,960 ± 2,160 | 0.4 ± 0.3 | 3.4 ± 0.3 | 0.0 ± 0.0 | 0.0 ± 0.0 | 2.6 ± 0.4 | 1.0 ± 0.0 | 0.0 ± 0.0 | 0.0 ± 0.0 |
 | Relay re-encodes every record and is the only route | NandaTown fingerprint | 0 ± 0 | 68.7 ± 1.7 | 0.0 ± 0.0 | 0.0 ± 0.0 | 0.0 ± 0.0 | 0.0 ± 0.0 | 0.0 ± 0.0 | 1.0 ± 0.0 | 0.0 ± 0.0 |
 | Relay re-encodes every record and is the only route | Canonical record (dataset.v1) | 115,760 ± 2,160 | 0.0 ± 0.0 | 0.0 ± 0.0 | 0.0 ± 0.0 | 0.0 ± 0.0 | 2.7 ± 0.5 | 0.0 ± 0.0 | 0.0 ± 0.0 | 0.0 ± 0.0 |
 

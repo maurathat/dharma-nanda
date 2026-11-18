@@ -59,6 +59,10 @@ second relay.
 | Re-encodes every record and is the only route | Canonical record | 115,760 | 2.7 | None |
 | Changes the answer in 30% of deliveries | No check | 54,720 | 6.0 | None |
 | Changes the answer in 30% of deliveries | Canonical record | 114,960 | 2.6 | The altering relay, every run |
+| Changes the answer and publishes the result in the seller's name | Canonical record | 54,720 | 6.0 | None |
+| Changes the answer and publishes the result in the seller's name | Canonical record, seller's signature over the identity | 114,960 | 2.6 | The forging relay, every run |
+| Re-encodes every record | Canonical record, seller's signature over the bytes | 114,800 | 2.7 | The honest relay, every run |
+| Re-encodes every record | Canonical record, seller's signature over the identity | 115,760 | 2.7 | None |
 
 - A relay that only re-encodes, as any gateway written in another language
   may, is convicted as a tamperer in every run when identity is a
@@ -73,6 +77,16 @@ second relay.
 - Even with no check on receipt, an audit afterwards finds the damage: the
   verdicts name a delivery nobody published (57 unresolved parent links per
   run).
+- Identity alone does not say who wrote a record. A relay that changes the
+  answer and then publishes the changed record under the seller's name
+  passes the identity check, every honest seller is suspended, and the
+  lineage audit finds nothing wrong. Each author therefore signs with an
+  Ed25519 key that the town's registry binds to its name. With the seller's
+  signature required, no forged delivery reached a judge.
+- What is signed matters. A signature over the bytes fails when an honest
+  relay re-encodes the record, and convicts that relay in every run, exactly
+  as the fingerprint does. A signature over the canonical identity survives
+  re-encoding.
 
 **Oversight.**
 
@@ -153,8 +167,12 @@ council; the watchtower is a stand-in policy, not a person.
 - A relay is struck on any delivery that does not verify, so a relay that
   merely re-encodes is treated as a tamperer under the fingerprint check.
   That is the point of the comparison, not a model of how relays are policed.
-- Records are not signed. Identity and lineage are checked; who published a
-  record rests on the town's own message layer.
+- Each record is signed by its author, but the link from a name to a key is
+  simply given: the registry holds one key per registered agent from the
+  start. How a real registry earns that trust is outside this town. Keys
+  come from the scenario seed so that runs repeat; nothing protects them.
+- Nothing fixes the order of records or shows that one was withheld. That
+  needs an append-only log, which the town does not have.
 
 ## Run it
 
@@ -184,7 +202,7 @@ Then, from `dharma-nanda` with the virtual environment active:
 | `python verify.py runs/council/seed-1` | NandaTown's own bundle check, then a second run that must give the same events. |
 | `python make_scenarios.py` | Rewrite the scenario files. |
 
-`evidence/` holds the seed 1 bundle of thirteen towns; a test checks that every one still verifies. Unpack one and verify it:
+`evidence/` holds the seed 1 bundle of seventeen towns; a test checks that every one still verifies. Unpack one and verify it:
 
 ```
 tar -xzf evidence/council-seed1.tar.gz -C /tmp
@@ -192,8 +210,9 @@ python verify.py /tmp/council-seed1
 python audit.py /tmp/council-seed1
 ```
 
-`rec_alter_none` is expected to fail the `lineage_resolves` stage and the
-audit: that failure is the finding.
+`rec_alter_none` is expected to fail the `lineage_resolves` stage, and the
+`rec_forge_*` towns the `records_signed` stage, with the audit failing to
+match: those failures are the findings.
 
 ## Files
 

@@ -189,7 +189,7 @@ class Seller(SimAgent):
             answer, note = 0, JUNK_NOTE
         if inject:
             note = INJECTION
-        _, raw = book.publish(self.name, {
+        _, raw = book.publish(self, {
             "kind": "delivery", "answer": answer, "note": note,
             "signed": self.config.get("sign", self.name)}, [job_id])
         self.api.observe("dn_work", job_id, {"quality": quality,
@@ -225,8 +225,10 @@ class Seller(SimAgent):
 
 @role("dn_relay")
 class Relay(SimAgent):
-    """Carries deliveries. config: mode (honest | reencode | alter), rate
-    (share of deliveries an altering relay changes)."""
+    """Carries deliveries. config: mode (honest | reencode | alter | forge),
+    rate (share of deliveries an altering or forging relay changes). An
+    altering relay changes the bytes it carries; a forging relay also
+    publishes the changed record under the seller's name."""
 
     def handle_dn_carry(self, msg):
         b = msg["body"]
@@ -242,6 +244,17 @@ class Relay(SimAgent):
             body["delivery"] = records.alter(body["delivery"],
                                              {"answer": answer + 100})
             did = "altered"
+        elif mode == "forge" and luck(self.api, "alter", body["job_id"],
+                                      self.api.now) \
+                < self.config.get("rate", 0.3):
+            # Change the answer and publish the result in the seller's
+            # name, signed with the relay's own key.
+            book, real = ledger(self.api), records.members(body["delivery"])
+            _, body["delivery"] = book.publish(
+                real["owner"], dict(real["content"],
+                                    answer=real["content"]["answer"] + 100),
+                real["parents"], key=book.key_of(self))
+            did = "forged"
         body["via"] = self.name
         self.api.observe("dn_relayed", body["job_id"], {"did": did})
         self.api.send(b["to"], "dn_delivery", body)
@@ -252,11 +265,14 @@ class Relay(SimAgent):
 @role("dn_buyer")
 class Buyer(SimAgent):
     """config: rounds, inspect (send deliveries to a panel), verify (check
-    each record on receipt), ladder (skip suspended sellers), watch (name
-    of the watchtower, or empty), escalate_splits, blame (strike a relay whose delivery does not
+    each record on receipt), check_sig ("id" or "bytes": also require the
+    seller's signature over the record's identity, or over its bytes),
+    ladder (skip suspended sellers), watch (name of the watchtower, or
+    empty), escalate_splits, blame (strike a relay whose delivery does not
     verify), grind and friends (red team: the number of rewrites of a job
-    it will try so that most of its panel are these judges), judge_fee (paid to each judge for a
-    verdict)."""
+    it will try so that most of its panel are these judges), judge_fee
+    (paid to each judge for a verdict), easy (sums a person can do in
+    their head)."""
 
     kind = "trade"
 
@@ -305,7 +321,7 @@ class Buyer(SimAgent):
                         self.name, content, parents))))) \
                     > rules["panel"]:
                 break
-        job_id, raw = book.publish(self.name, content, parents)
+        job_id, raw = book.publish(self, content, parents)
         self.api.escrow_hold(price, ref=job_id)
         self.jobs[job_id] = {"seller": card["name"], "price": price,
                              "raw": raw, "resent": False, "verdicts": {},
@@ -322,6 +338,9 @@ class Buyer(SimAgent):
         if self.config.get("verify", True):
             ok = (rec is not None and rec["owner"] == job["seller"]
                   and b["job_id"] in rec["parents"])
+            how = self.config.get("check_sig", "")
+            if ok and how:
+                ok = book.signed(rid, b["delivery"], how)
             if not ok:
                 self.api.observe("dn_record_refused", b["job_id"],
                                  {"via": b.get("via", ""),
@@ -329,7 +348,7 @@ class Buyer(SimAgent):
                 via = b.get("via", "")
                 if via and self.config.get("ladder", True) \
                         and self.config.get("blame", True):
-                    fid, _ = book.publish(self.name, {
+                    fid, _ = book.publish(self, {
                         "kind": "relay_fault", "relay": via,
                         "job": b["job_id"], "again": int(job["resent"])},
                         [b["job_id"]])
@@ -396,7 +415,7 @@ class Buyer(SimAgent):
                     "panel", ids)
 
     def escalate(self, job_id, job, reason, ids):
-        case_id, raw = ledger(self.api).publish(self.name, {
+        case_id, raw = ledger(self.api).publish(self, {
             "kind": "escalation", "reason": reason, "job": job_id}, ids)
         job["case"] = case_id
         self.api.send(self.config["watch"], "dn_case", {
@@ -428,7 +447,7 @@ class Buyer(SimAgent):
             self.api.escrow_refund(job_id)
         if job["rule"]:
             parents = list(parents) + [job["rule"]]
-        rid, _ = book.publish(self.name, {
+        rid, _ = book.publish(self, {
             "kind": "settlement", "trade": self.kind, "job": job_id,
             "seller": job["seller"], "outcome": "paid" if paid else "refunded",
             "fault": fault, "reason": reason,
@@ -501,7 +520,7 @@ class Judge(SimAgent):
             flag = True
         if plan == "colluder" and seller in c.get("friends", []):
             accept, flag = True, False
-        _, raw = book.publish(self.name, {
+        _, raw = book.publish(self, {
             "kind": "verdict", "job": b["job_id"], "accept": int(accept),
             "flag": int(flag)}, [rid])
         self.api.reply(msg, "dn_verdict", {"job_id": b["job_id"],
@@ -600,7 +619,7 @@ class Watchtower(SimAgent):
         self.api.observe("dn_watch", case_id, dict(d, job=b["job_id"],
                                                    reason=case["content"]
                                                    ["reason"]))
-        _, raw = book.publish(self.name, dict(d, kind="decision"), [case_id])
+        _, raw = book.publish(self, dict(d, kind="decision"), [case_id])
         self.api.reply(msg, "dn_decision", {"job_id": b["job_id"],
                                             "decision": raw})
 
@@ -669,7 +688,7 @@ class Council(SimAgent):
         self.queue: list[str] = []
         self.flagged: list[str] = []     # kept until the rule changes
         self.cases: dict[str, tuple[str, str]] = {}
-        book.rule_id, _ = book.publish(self.name, {
+        book.rule_id, _ = book.publish(self, {
             "kind": "rule", "version": 1,
             "rules": {**DEFAULT_RULES, **self.config.get("rules", {})}})
         if self.config.get("members"):
@@ -702,7 +721,7 @@ class Council(SimAgent):
         self.last_fails = len(fails)
         if change is None:
             return
-        pid, raw = book.publish(self.name, {
+        pid, raw = book.publish(self, {
             "kind": "proposal", "change": change, "count": len(evidence)},
             [book.rule_id] + evidence[:8])
         self.open = {"id": pid, "change": change, "ballots": {}}
@@ -723,7 +742,7 @@ class Council(SimAgent):
         passed = 2 * yes > len(p["ballots"])
         if passed:
             self.version += 1
-            book.rule_id, _ = book.publish(self.name, {
+            book.rule_id, _ = book.publish(self, {
                 "kind": "rule", "version": self.version,
                 "rules": {**rules_of(self.api), **p["change"]}},
                 [book.rule_id, p["id"]]
@@ -755,7 +774,7 @@ class Council(SimAgent):
                         if book.read(p)["content"]["kind"] == "verdict"]
             delivery = book.read(verdicts[0])["parents"][0]
             job_id = s["content"]["job"]
-            case_id, raw = book.publish(self.name, {
+            case_id, raw = book.publish(self, {
                 "kind": "escalation", "reason": "review", "job": job_id},
                 [sid, book.rule_id])
             self.cases[case_id] = (sid, s["content"]["seller"])
@@ -777,7 +796,7 @@ class Council(SimAgent):
         sid, seller = self.cases.pop(case)
         if rec["content"]["decision"] != "accept":
             return
-        pid, _ = book.publish(self.name, {"kind": "pardon", "seller": seller},
+        pid, _ = book.publish(self, {"kind": "pardon", "seller": seller},
                               [rid, sid])
         self.api._engine.layers["trust"].pardon(self.name, seller,
                                                 "injection", pid)
@@ -808,7 +827,7 @@ class Member(SimAgent):
         if self.config.get("vote") == "person":
             content["by"] = by
             self.api.observe("dn_vote", pid, {"vote": vote, "by": by})
-        _, raw = book.publish(self.name, content, [pid])
+        _, raw = book.publish(self, content, [pid])
         self.api.reply(msg, "dn_ballot", {"ballot": raw})
 
 
@@ -874,6 +893,7 @@ def cast_of(agents: list[dict[str, Any]]) -> dict[str, Any]:
 def measure(events: list[dict[str, Any]], cast: dict[str, Any],
             data_facts: str) -> dict[str, Any]:
     work, relayed, strikes, published = {}, {}, {}, {}
+    keys, sigs = {}, {}
     out = {"trades": 0, "value": 0, "paid": 0, "paid_bad": 0,
            "good_refused": 0, "good_refused_record": 0,
            "good_refused_flag": 0, "good_held": 0, "tests": 0,
@@ -888,8 +908,12 @@ def measure(events: list[dict[str, Any]], cast: dict[str, Any],
     last_did: dict[str, str] = {}
     for e in events:
         k, d, s = e["kind"], e["detail"], e["subject"]
-        if k == "dn_record":
+        if k == "dn_key":
+            keys[s] = d["public"]
+        elif k == "dn_record":
             published[s] = d["raw"]
+            if "sig" in d:
+                sigs[s] = d["sig"]
             if d["kind"] == "rule":
                 suspend_at = json.loads(d["raw"])["content"]["rules"][
                     "suspend_at"]
@@ -898,7 +922,7 @@ def measure(events: list[dict[str, Any]], cast: dict[str, Any],
         elif k == "dn_relayed":
             relayed.setdefault(s, []).append(d["did"])
             last_did[s] = d["did"]
-            out["altered_sent"] += d["did"] == "altered"
+            out["altered_sent"] += d["did"] in ("altered", "forged")
             out["reencoded_sent"] += d["did"] == "reencoded"
         elif k == "dn_record_refused":
             out["record_refused"] += 1
@@ -926,7 +950,7 @@ def measure(events: list[dict[str, Any]], cast: dict[str, Any],
         elif k == "dn_outcome":
             w = work.get(s, {"quality": "none", "inject": False})
             good = w["quality"] == "good"
-            judged_altered = last_did.get(s) == "altered" \
+            judged_altered = last_did.get(s) in ("altered", "forged") \
                 and d["reason"] != "record"
             if d.get("buyer") in cast.get("red_buyers", ()):
                 # A red buyer's trades are not the town's gain; good work
@@ -964,10 +988,14 @@ def measure(events: list[dict[str, Any]], cast: dict[str, Any],
                            if strikes.get(n, 0) < suspend_at),
         honest_relays_out=sorted(
             n for n, mode in cast.get("relays", {}).items()
-            if mode != "alter" and strikes.get(n, 0) >= suspend_at),
+            if mode not in ("alter", "forge")
+            and strikes.get(n, 0) >= suspend_at),
         bad_relays_out=sorted(
             n for n, mode in cast.get("relays", {}).items()
-            if mode == "alter" and strikes.get(n, 0) >= suspend_at),
+            if mode in ("alter", "forge")
+            and strikes.get(n, 0) >= suspend_at),
+        signatures={k: len(v) for k, v in records.audit_signatures(
+            published, keys, sigs).items()},
         records=audit["records"], unsound=len(audit["unsound"]),
         edges={k: len(v) for k, v in audit["edges"].items()})
     return out
@@ -994,6 +1022,13 @@ def dharma_nanda(spec, trace) -> list[StageResult]:
             evidence=recs[:8],
             note=f"{m['records']} records; {m['unsound']} do not recompute"
                  " to the identity they were published under"),
+        StageResult(
+            name="records_signed",
+            status="passed" if not (m["signatures"]["invalid"]
+                                    or m["signatures"]["unsigned"])
+            else "failed", evidence=recs[:8],
+            note=" ".join(f"{k}={v}" for k, v in m["signatures"].items())
+            + " (signed by the key registered to the named owner)"),
         StageResult(
             name="lineage_resolves",
             status="passed" if not broken else "failed", evidence=recs[:8],

@@ -177,6 +177,7 @@ agents:
     rounds: 16
     inspect: true
     verify: true
+    check_sig: id
     ladder: true
     judge_fee: 40
     watch: watchtower
@@ -187,6 +188,7 @@ agents:
     rounds: 16
     inspect: true
     verify: true
+    check_sig: id
     ladder: true
     judge_fee: 40
     watch: watchtower
@@ -197,6 +199,7 @@ agents:
     rounds: 16
     inspect: true
     verify: true
+    check_sig: id
     ladder: true
     judge_fee: 40
     watch: watchtower
@@ -207,6 +210,7 @@ agents:
     rounds: 16
     inspect: true
     verify: true
+    check_sig: id
     ladder: true
     judge_fee: 40
     watch: watchtower
@@ -217,6 +221,7 @@ agents:
     rounds: 16
     inspect: true
     verify: true
+    check_sig: id
     ladder: true
     judge_fee: 40
     watch: watchtower
@@ -227,6 +232,7 @@ agents:
     rounds: 16
     inspect: true
     verify: true
+    check_sig: id
     ladder: true
     judge_fee: 40
     watch: watchtower
@@ -237,6 +243,7 @@ agents:
     rounds: 16
     inspect: true
     verify: true
+    check_sig: id
     ladder: true
     judge_fee: 40
     watch: ''
