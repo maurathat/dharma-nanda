@@ -129,12 +129,12 @@ for relay in ("honest", "reencode", "alter", "forge"):
              f"Blue-team town. Relay: {relay}. Record check on receipt:"
              f" {check}.", True, False, False, relay=relay,
              data_facts=plugin, verify=verify, check_sig=sig)
-for check in ("town", "canonical"):
+for check in ("town", "canonical", "bytesig", "signed"):
     town(f"rec_only_{check}",
          "Blue-team town. The relay re-encodes and is the only route."
          f" Record check on receipt: {check}.", True, False, False,
          relay="reencode", data_facts=CHECKS[check][0], only_route=True,
-         check_sig="")
+         check_sig=CHECKS[check][2])
 town("council_fast", LEVELS["council"][3] + " The council reviews every"
      " round and acts on two cases. Red team active.", True, True, True,
      every=1, need=2)

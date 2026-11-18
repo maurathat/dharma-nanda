@@ -40,6 +40,8 @@ All deliveries start out through one relay. `No check` takes the bytes as they a
 | Relay changes the answer in 30% of deliveries and publishes the result in the seller's name | Canonical record, signature over the identity | 114,960 ± 2,160 | 0.4 ± 0.3 | 3.4 ± 0.3 | 0.0 ± 0.0 | 0.0 ± 0.0 | 2.6 ± 0.4 | 1.0 ± 0.0 | 0.0 ± 0.0 | 0.0 ± 0.0 |
 | Relay re-encodes every record and is the only route | NandaTown fingerprint | 0 ± 0 | 68.7 ± 1.7 | 0.0 ± 0.0 | 0.0 ± 0.0 | 0.0 ± 0.0 | 0.0 ± 0.0 | 0.0 ± 0.0 | 1.0 ± 0.0 | 0.0 ± 0.0 |
 | Relay re-encodes every record and is the only route | Canonical record (dataset.v1) | 115,760 ± 2,160 | 0.0 ± 0.0 | 0.0 ± 0.0 | 0.0 ± 0.0 | 0.0 ± 0.0 | 2.7 ± 0.5 | 0.0 ± 0.0 | 0.0 ± 0.0 | 0.0 ± 0.0 |
+| Relay re-encodes every record and is the only route | Canonical record, signature over the bytes | 0 ± 0 | 68.7 ± 1.7 | 0.0 ± 0.0 | 0.0 ± 0.0 | 0.0 ± 0.0 | 0.0 ± 0.0 | 0.0 ± 0.0 | 1.0 ± 0.0 | 0.0 ± 0.0 |
+| Relay re-encodes every record and is the only route | Canonical record, signature over the identity | 115,760 ± 2,160 | 0.0 ± 0.0 | 0.0 ± 0.0 | 0.0 ± 0.0 | 0.0 ± 0.0 | 2.7 ± 0.5 | 0.0 ± 0.0 | 0.0 ± 0.0 | 0.0 ± 0.0 |
 
 ## What is sent to the watchtower, and how good and how busy it is
 
