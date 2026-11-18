@@ -47,6 +47,16 @@ def task(n: int, lines: int = 3) -> tuple[str, int]:
             + ".", sum(q * p for q, p in rows))
 
 
+def tls() -> ssl.SSLContext:
+    """Python from python.org on a Mac has no root certificates of its own;
+    certifi, which comes with NandaTown, has them."""
+    try:
+        import certifi
+    except ImportError:
+        return ssl.create_default_context()
+    return ssl.create_default_context(cafile=certifi.where())
+
+
 def call(model: str, prompt: str, path: str = "/chat/completions"):
     key = os.environ.get("NEBIUS_API_KEY", "")
     if not key:
@@ -57,19 +67,24 @@ def call(model: str, prompt: str, path: str = "/chat/completions"):
     req = urllib.request.Request(BASE + path, data=body, headers={
         "Authorization": "Bearer " + key,
         "Content-Type": "application/json"})
+    problem = ""
     for wait in (0, 5, 20):
         time.sleep(wait)
         try:
-            with urllib.request.urlopen(
-                    req, timeout=120,
-                    context=ssl.create_default_context()) as resp:
+            with urllib.request.urlopen(req, timeout=120,
+                                        context=tls()) as resp:
                 return json.load(resp)
         except urllib.error.HTTPError as exc:
+            problem = f"{exc.code} {exc.read().decode(errors='replace')[:300]}"
             if exc.code in (400, 401, 403, 404):
-                sys.exit(f"the service refused the request ({exc.code}):"
-                         f" {exc.read().decode(errors='replace')[:300]}")
-        except (OSError, json.JSONDecodeError):
-            pass
+                sys.exit(f"the service refused the request: {problem}")
+        except (OSError, json.JSONDecodeError) as exc:
+            problem = f"{type(exc).__name__}: {exc}"
+            if isinstance(exc, ssl.SSLError) or "CERTIFICATE" in problem:
+                break
+    if path == "/models":
+        sys.exit(f"could not reach the service: {problem}")
+    print(f"\n  (no answer: {problem[:120]})", flush=True)
     return None
 
 
