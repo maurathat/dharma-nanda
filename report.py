@@ -105,7 +105,7 @@ CASES = [(f"rec_{relay}_{check}", f"Relay {what}", label)
          for relay, what in RELAYS for check, label in CHECKS
          if load(f"rec_{relay}_{check}")]
 CASES += [(f"rec_only_{check}", "Relay re-encodes every record and is the"
-           " only route", label) for check, label in CHECKS[1:3]]
+           " only route", label) for check, label in CHECKS[1:]]
 for name, what, label in CASES:
     rs = load(name)
     rows.append([what, label] + [
