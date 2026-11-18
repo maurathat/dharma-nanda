@@ -88,7 +88,8 @@ with the watchtower.
 python demo.py trace
 ```
 
-Takes case 2, where the person paid a seller the judges had flagged, and
+Works after step 3 or step 5, on whichever was run last. Takes the first
+case where the person paid a seller the judges had flagged, and
 prints the settlement with every record it rests on: the person's decision,
 the escalation, the three verdicts including the two false flags, the
 delivery, the job, and the rule in force. Then it recomputes every record of

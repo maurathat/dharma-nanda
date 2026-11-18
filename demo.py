@@ -134,21 +134,28 @@ def council_step():
 
 
 def trace_step():
-    bundle = os.path.join(OUT, "demo_watch", "demo_watch", f"seed-{SEED}")
-    if not os.path.isdir(bundle):
-        sys.exit("run `python demo.py seat` first")
-    # the first case where a person paid a seller the judges had flagged
-    job = next(e["detail"]["job"] for e in events("demo_watch",
-                                                  "demo_watch")
-               if e["kind"] == "dn_watch" and e["detail"]["by"] == "person"
-               and e["detail"]["decision"] == "accept")
-    settlement = next(e["detail"]["settlement"]
-                      for e in events("demo_watch", "demo_watch")
-                      if e["kind"] == "dn_outcome" and e["subject"] == job)
+    # whichever of the two person-decided runs was made last
+    found = [n for n in ("demo_council", "demo_watch")
+             if os.path.isdir(os.path.join(OUT, n, n, f"seed-{SEED}"))]
+    if not found:
+        sys.exit("run `python demo.py seat` or `python demo.py council`"
+                 " first")
+    name = max(found, key=lambda n: os.path.getmtime(
+        os.path.join(OUT, n, n, f"seed-{SEED}")))
+    bundle = os.path.join(OUT, name, name, f"seed-{SEED}")
+    # the first live case where a person paid a seller the judges flagged
+    job = next((e["detail"]["job"] for e in events(name, name)
+                if e["kind"] == "dn_watch" and e["detail"]["by"] == "person"
+                and e["detail"]["decision"] == "accept"
+                and e["detail"]["reason"] == "flag"), None)
+    if job is None:
+        sys.exit("no flagged delivery was accepted by a person in that run")
+    settlement = [e["detail"]["settlement"] for e in events(name, name)
+                  if e["kind"] == "dn_outcome" and e["subject"] == job][-1]
     print(RULE + "\nWhy was this seller paid? The settlement, and every"
           " record it rests on:\n")
     subprocess.run([sys.executable, os.path.join(HERE, "audit.py"), bundle,
-                    "--trace", settlement])
+                    "--trace", settlement, "--depth", "6"])
     print("\nThe person's decision is a record like any other. Check the"
           " whole run:\n")
     subprocess.run([sys.executable, os.path.join(HERE, "audit.py"), bundle])
