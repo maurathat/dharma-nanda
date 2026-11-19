@@ -133,3 +133,50 @@ def test_every_evidence_bundle_still_verifies(tmp_path):
         + sorted(str(p) for p in tmp_path.iterdir()),
         capture_output=True, text=True)
     assert done.returncode == 0, done.stdout + done.stderr
+
+
+def test_prism_ladder_prompt_matches_the_ladder():
+    """prism/dharma-ladder.prompt.json states the ladder as a decision table
+    for Prism Creator. It must agree with the Ladder the town runs, for
+    every event and every number of strikes tried."""
+    import json
+    import operator
+
+    from dharma_nanda import DEFAULT_RULES, Ladder
+
+    with open(os.path.join(HERE, "prism", "dharma-ladder.prompt.json")) as fh:
+        app = json.load(fh)["app"]
+    ops = {"is": operator.eq, ">=": operator.ge, "<=": operator.le,
+           "=": operator.eq}
+
+    def holds(when, got):
+        return all(ops[w["op"]](got[w["field"]], w["value"]) for w in when)
+
+    def table(strikes, event):
+        got = {"strikes": strikes, "event": event}
+        for rule in app["rules"]:
+            if holds(rule["when"], got):
+                return rule["then"]
+        return app["otherwise"]
+
+    class Quiet:
+        def emit(self, *a, **k):
+            pass
+
+    limit = DEFAULT_RULES["suspend_at"]
+    for strikes in range(60):
+        for event in app["fields"][1]["values"]:
+            ladder = Ladder(Quiet())
+            ladder.strikes["s"] = strikes
+            if event.startswith("pardon"):
+                ladder.pardon("o", "s", event[len("pardon"):], "r")
+            else:
+                ladder.update("o", "s", event, "r")
+            real = "suspended" if ladder.strikes["s"] >= limit else "trading"
+            assert table(strikes, event) == real, (strikes, event)
+            for prop in app["properties"]:
+                if holds(prop["when"], {"strikes": strikes, "event": event}):
+                    assert real != prop["then"], prop["why"]
+    for case in app["examples"]:
+        strikes, event = case["request"].split()
+        assert table(int(strikes), event) == case["response"]
