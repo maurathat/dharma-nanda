@@ -1,0 +1,262 @@
+{
+  "schema": "prism/prompt/1",
+  "goal": "Say whether a seller is trading or suspended on the Dharma Nanda ladder after one more event. Then every suspension and every pardon can be replayed and checked.",
+  "pattern": "decisionTable",
+  "repository": "maurathat/dharma-nanda",
+  "license": "Apache-2.0",
+  "app": {
+    "name": "dharma-ladder",
+    "title": "Dharma Nanda ladder",
+    "purpose": "Decide whether a seller or relay is trading or suspended after one event, from its strikes before the event, under the town's starting rule that 3 strikes suspend.",
+    "fields": [
+      {
+        "name": "strikes",
+        "kind": "number",
+        "min": 0,
+        "max": 1000,
+        "means": "the strikes held before the event, a whole number"
+      },
+      {
+        "name": "event",
+        "kind": "choice",
+        "values": [
+          "good",
+          "bad",
+          "injection",
+          "pardonbad",
+          "pardoninjection"
+        ],
+        "means": "what just happened: a delivery judged good or bad, an injection found in a delivery, or a council pardon of an earlier bad delivery or injection"
+      }
+    ],
+    "outcomes": [
+      "trading",
+      "suspended"
+    ],
+    "meanings": {
+      "trading": "fewer than 3 strikes after the event; offered jobs",
+      "suspended": "3 or more strikes after the event; offered no new job"
+    },
+    "rules": [
+      {
+        "when": [
+          {
+            "field": "event",
+            "op": "is",
+            "value": "bad"
+          },
+          {
+            "field": "strikes",
+            "op": ">=",
+            "value": 2
+          }
+        ],
+        "then": "suspended",
+        "why": "dharma_nanda.py Ladder.STRIKES: a bad delivery adds 1 strike, reaching the rule's limit of 3"
+      },
+      {
+        "when": [
+          {
+            "field": "event",
+            "op": "is",
+            "value": "injection"
+          },
+          {
+            "field": "strikes",
+            "op": ">=",
+            "value": 1
+          }
+        ],
+        "then": "suspended",
+        "why": "dharma_nanda.py Ladder.STRIKES: an injection adds 2 strikes, reaching the rule's limit of 3"
+      },
+      {
+        "when": [
+          {
+            "field": "event",
+            "op": "is",
+            "value": "good"
+          },
+          {
+            "field": "strikes",
+            "op": ">=",
+            "value": 3
+          }
+        ],
+        "then": "suspended",
+        "why": "strikes only rise: good work removes none"
+      },
+      {
+        "when": [
+          {
+            "field": "event",
+            "op": "is",
+            "value": "pardonbad"
+          },
+          {
+            "field": "strikes",
+            "op": ">=",
+            "value": 4
+          }
+        ],
+        "then": "suspended",
+        "why": "dharma_nanda.py Ladder.pardon: one strike is taken back, and 3 or more remain"
+      },
+      {
+        "when": [
+          {
+            "field": "event",
+            "op": "is",
+            "value": "pardoninjection"
+          },
+          {
+            "field": "strikes",
+            "op": ">=",
+            "value": 5
+          }
+        ],
+        "then": "suspended",
+        "why": "dharma_nanda.py Ladder.pardon: two strikes are taken back, and 3 or more remain"
+      }
+    ],
+    "otherwise": "trading",
+    "otherwiseWhy": "in every other case fewer than 3 strikes remain after the event",
+    "properties": [
+      {
+        "kind": "never",
+        "when": [
+          {
+            "field": "event",
+            "op": "is",
+            "value": "bad"
+          },
+          {
+            "field": "strikes",
+            "op": "<=",
+            "value": 1
+          }
+        ],
+        "then": "suspended",
+        "why": "a first or second plain mistake never suspends"
+      },
+      {
+        "kind": "never",
+        "when": [
+          {
+            "field": "event",
+            "op": "is",
+            "value": "injection"
+          },
+          {
+            "field": "strikes",
+            "op": "=",
+            "value": 0
+          }
+        ],
+        "then": "suspended",
+        "why": "one injection from a clean record leaves the seller trading"
+      },
+      {
+        "kind": "never",
+        "when": [
+          {
+            "field": "event",
+            "op": "is",
+            "value": "good"
+          },
+          {
+            "field": "strikes",
+            "op": ">=",
+            "value": 3
+          }
+        ],
+        "then": "trading",
+        "why": "good work does not lift a suspension; only the council's pardon lowers strikes"
+      },
+      {
+        "kind": "never",
+        "when": [
+          {
+            "field": "event",
+            "op": "is",
+            "value": "good"
+          },
+          {
+            "field": "strikes",
+            "op": "<=",
+            "value": 2
+          }
+        ],
+        "then": "suspended",
+        "why": "good work never suspends"
+      },
+      {
+        "kind": "never",
+        "when": [
+          {
+            "field": "event",
+            "op": "is",
+            "value": "pardonbad"
+          },
+          {
+            "field": "strikes",
+            "op": "<=",
+            "value": 3
+          }
+        ],
+        "then": "suspended",
+        "why": "pardoning the delivery that brought a seller to exactly 3 strikes lifts the suspension"
+      }
+    ],
+    "examples": [
+      {
+        "request": "0 good",
+        "response": "trading"
+      },
+      {
+        "request": "0 bad",
+        "response": "trading"
+      },
+      {
+        "request": "1 bad",
+        "response": "trading"
+      },
+      {
+        "request": "2 bad",
+        "response": "suspended"
+      },
+      {
+        "request": "0 injection",
+        "response": "trading"
+      },
+      {
+        "request": "1 injection",
+        "response": "suspended"
+      },
+      {
+        "request": "3 good",
+        "response": "suspended"
+      },
+      {
+        "request": "3 pardonbad",
+        "response": "trading"
+      },
+      {
+        "request": "4 pardonbad",
+        "response": "suspended"
+      },
+      {
+        "request": "4 pardoninjection",
+        "response": "trading"
+      },
+      {
+        "request": "5 pardoninjection",
+        "response": "suspended"
+      },
+      {
+        "request": "2 good",
+        "response": "trading"
+      }
+    ]
+  }
+}
