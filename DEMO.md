@@ -16,20 +16,29 @@ Every one of those decisions is a record with parents, like the agents'.
 
 ## Before you present
 
-From the `dharma-nanda` folder, with the virtual environment from the README:
+On a computer that has never run it (needs git and Python 3.11 or newer):
+
+```
+git clone https://github.com/maurathat/dharma-nanda
+cd dharma-nanda
+sh setup.sh
+```
+
+On one that has, from the `dharma-nanda` folder:
 
 ```
 git pull
-python demo.py attack
+sh setup.sh
+./run-demo attack
 ```
 
-The second command is only a check that everything runs. Make the terminal
+The last command is only a check that everything runs. Make the terminal
 font large and the window wide (about 110 columns).
 
 ## Step 1: same data, different bytes (1 minute)
 
 ```
-python demo.py bytes
+./run-demo bytes
 ```
 
 One delivery record three ways: as published, re-encoded by a gateway, and
@@ -52,7 +61,7 @@ fingerprint does.
 ## Step 2: what the blue team alone does (1 minute)
 
 ```
-python demo.py attack
+./run-demo attack
 ```
 
 The blue team (three judges a job, planted test jobs, three strikes and out)
@@ -63,7 +72,7 @@ them: 3 of 6 honest sellers end up suspended.
 ## Step 3: a person in the watchtower (1 to 2 minutes)
 
 ```
-python demo.py seat
+./run-demo seat
 ```
 
 The same town, but flagged deliveries and split panels go to a person. You
@@ -85,7 +94,7 @@ with the watchtower.
 ## Step 4: trace the decision (1 minute)
 
 ```
-python demo.py trace
+./run-demo trace
 ```
 
 Works after step 3 or step 5, on whichever was run last. Takes the first
@@ -104,7 +113,7 @@ python verify.py demo-runs/demo_watch/demo_watch/seed-7
 ## Step 5: a person on the council too (about 3 minutes)
 
 ```
-python demo.py council
+./run-demo council
 ```
 
 This town starts with the blue team's rule: a delivery most judges flag is
@@ -131,7 +140,7 @@ the proposal, the earlier rule and the three ballots, yours marked
 ## Optional: watch the town (1 minute)
 
 ```
-python demo.py show
+./run-demo show
 ```
 
 Opens the run you just decided in NandaTown's own visualizer: the agents on

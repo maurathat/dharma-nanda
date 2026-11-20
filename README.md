@@ -180,15 +180,18 @@ Python 3.11 or later.
 
 ```
 git clone https://github.com/maurathat/dharma-nanda
-git clone https://github.com/projnanda/nandatown
-git -C nandatown checkout 6f9a7c064486c4a0ae9242f1ff341b8a4aad0244
-python3 -m venv venv
-venv/bin/pip install -e nandatown -r dharma-nanda/requirements.txt
 cd dharma-nanda
-../venv/bin/python -m pytest -q
+sh setup.sh
 ```
 
-Then, from `dharma-nanda` with the virtual environment active:
+`setup.sh` fetches NandaTown at commit `6f9a7c0` into `vendor/`, makes a
+virtual environment in `.venv`, installs both, and checks that the town runs.
+It takes under a minute and changes nothing outside this folder. The demo
+steps then run as `./run-demo bytes`, `./run-demo attack` and so on (see
+`DEMO.md`). The tests: `.venv/bin/python -m pytest -q test_dharma.py`.
+
+For everything else, activate the environment (`. .venv/bin/activate`) and,
+from this folder:
 
 | Command | What it does |
 | --- | --- |
