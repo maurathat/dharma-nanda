@@ -1,0 +1,8 @@
+#!/bin/sh
+# Runs a demo step with the environment setup.sh made:  ./run-demo attack
+cd "$(dirname "$0")"
+if [ ! -x .venv/bin/python ]; then
+    echo "Run 'sh setup.sh' first."
+    exit 1
+fi
+exec .venv/bin/python demo.py "$@"
