@@ -180,3 +180,42 @@ def test_prism_ladder_prompt_matches_the_ladder():
     for case in app["examples"]:
         strikes, event = case["request"].split()
         assert table(int(strikes), event) == case["response"]
+
+
+def test_settlement_cites_the_rule_that_decided_it(tmp_path):
+    """After the council changes a rule, a settlement must cite the rule
+    applied when the panel's verdicts were weighed, not the rule in force
+    when the job opened. A delivery refused on flags cites a rule under
+    which flags refuse; one sent to a person for its flags cites a rule
+    under which they do not."""
+    _, _, events = run("council_fast", tmp_path, seed=5)
+    store = {e["subject"]: json.loads(e["detail"]["raw"])
+             if "raw" in e["detail"] else None
+             for e in events if e["kind"] == "dn_record"}
+    assert all(store.values()), "records carry their text"
+    for rec in store.values():      # a parent is a reference; keep its id
+        rec["parents"] = [p["digest"] if isinstance(p, dict) else p
+                          for p in rec["parents"]]
+    rules = {rid: {"flag_refuses": 1, **r["content"]["rules"]}
+             for rid, r in store.items() if r["content"]["kind"] == "rule"}
+    assert len({r["flag_refuses"] for r in rules.values()}) == 2, \
+        "the council changed the flag rule in this run"
+    seen = {"flag": 0, "sent": 0}
+    for rec in store.values():
+        c = rec["content"]
+        if c["kind"] != "settlement":
+            continue
+        cited = [rules[p] for p in rec["parents"] if p in rules]
+        assert len(cited) == 1
+        by_person = [store[p] for p in rec["parents"]
+                     if store[p]["content"]["kind"] == "decision"]
+        if c["reason"] == "flag":
+            seen["flag"] += 1
+            assert cited[0]["flag_refuses"] == 1
+        elif by_person:
+            case = [store[p] for p in by_person[0]["parents"]
+                    if store[p]["content"]["kind"] == "escalation"][0]
+            if case["content"]["reason"] == "flag":
+                seen["sent"] += 1
+                assert cited[0]["flag_refuses"] == 0
+    assert seen["flag"] and seen["sent"]
