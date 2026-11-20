@@ -70,7 +70,7 @@ LEVELS = (("calm", "No red team, no oversight"),
 table(["Town", "Value delivered", "Buyers' net (value − price − judge fees)",
        "Paid for bad work", "Good work refused",
        "Honest sellers suspended (of 6)", "Red sellers still trading (of 5)",
-       "Watchtower cases", "Strikes taken back", "Rule changes"],
+       "Watchtower cases", "Pardons", "Rule changes"],
       [[label] + [cell([n(r[k]) for r in load(name)], f) for k, f in (
           ("value", "{:,.0f}"), ("net", "{:,.0f}"), ("paid_bad", "{:,.0f}"),
           ("good_refused", "{:.1f}"), ("honest_suspended", "{:.1f}"),

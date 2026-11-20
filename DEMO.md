@@ -133,7 +133,7 @@ and on the council. Nine prompts, in this order if you answer as shown:
 | Case 8 | Answer 1,200, which is right. Flagged by two judges. | `a` |
 
 It ends with the comparison (3 of 6 honest sellers suspended with the blue
-team alone, 1 of 6 here, two strikes taken back) and the new rule traced to
+team alone, 1 of 6 here, two pardons) and the new rule traced to
 the proposal, the earlier rule and the three ballots, yours marked
 `"by": "person"`.
 

@@ -118,8 +118,8 @@ def council_step():
     print(RULE)
     line("Blue team alone", measures("demo_blue", "demo_blue"))
     line("With a person on both", m)
-    print(f"\n  Rule changes: {len(m['rule_changes'])}. Strikes taken back"
-          f" after a second look: {m['pardons']}.")
+    print(f"\n  Rule changes: {len(m['rule_changes'])}. Pardons after a"
+          f" second look: {m['pardons']}.")
     rule = [e["detail"]["rule"] for e in events("demo_council",
                                                 "demo_council")
             if e["kind"] == "dn_rule" and e["detail"]["passed"]]

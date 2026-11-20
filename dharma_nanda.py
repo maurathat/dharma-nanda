@@ -397,6 +397,10 @@ class Buyer(SimAgent):
 
     def close(self, job_id: str, job: dict[str, Any]):
         rules = rules_of(self.api)
+        # The rule weighed here is the one the settlement must cite. It can
+        # differ from the rule in force when the job opened, if the council
+        # changed it in between.
+        job["rule"] = ledger(self.api).rule_id
         votes = [c for _, c in job["verdicts"].values()]
         ids = [rid for rid, _ in job["verdicts"].values()]
         accepts = sum(v["accept"] for v in votes)

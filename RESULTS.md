@@ -4,7 +4,7 @@ Scripted agents, 20 seeds per town, every town with the same cast: 6 honest sell
 
 ## Oversight, one actor at a time
 
-| Town | Value delivered | Buyers' net (value − price − judge fees) | Paid for bad work | Good work refused | Honest sellers suspended (of 6) | Red sellers still trading (of 5) | Watchtower cases | Strikes taken back | Rule changes |
+| Town | Value delivered | Buyers' net (value − price − judge fees) | Paid for bad work | Good work refused | Honest sellers suspended (of 6) | Red sellers still trading (of 5) | Watchtower cases | Pardons | Rule changes |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
 | No red team, no oversight | 140,000 ± 2,051 | 44,000 ± 2,051 | 8,500 ± 1,282 | 0.0 ± 0.0 | 0.0 ± 0.0 | 0.0 ± 0.0 | 0.0 ± 0.0 | 0.0 ± 0.0 | 0.0 ± 0.0 |
 | Red team, no oversight | 92,000 ± 2,420 | -4,000 ± 2,420 | 38,500 ± 1,512 | 0.0 ± 0.0 | 0.0 ± 0.0 | 5.0 ± 0.0 | 0.0 ± 0.0 | 0.0 ± 0.0 | 0.0 ± 0.0 |
