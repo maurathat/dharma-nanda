@@ -6,3 +6,4 @@ vendor/
 .pytest_cache/
 demo-runs/
 model-check/
+monitor-records.jsonl
